@@ -87,7 +87,6 @@ namespace pve
         viewportInfo.scissorCount = 1;
         viewportInfo.pScissors = &configInfo.scissor;
 
-
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = 2; // How many programmable stages our pipeline will use. 2 is for vertex and fragment shaders.
@@ -124,6 +123,10 @@ namespace pve
         {
             throw std::runtime_error("Failed to create shader module");
         }
+    }
+    
+    void PvePipeline::bind(VkCommandBuffer commandBuffer){
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
     }
 
     PipelineConfigInfo PvePipeline::defaultPipelineConfigInfo(uint32_t width, uint32_t height)

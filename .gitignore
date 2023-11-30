@@ -34,3 +34,5 @@
 # Compiled shaders
 *.spv
 
+# Environment variables
+*.env

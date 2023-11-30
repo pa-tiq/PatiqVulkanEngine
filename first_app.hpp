@@ -36,6 +36,6 @@ namespace pve
         // a smart pointer simulates a pointer but with the addition of automatic memory management
         std::unique_ptr<PvePipeline> pvePipeline;
         VkPipelineLayout pipelineLayout;
-        std::vector<VkCommandBuffer> commandBuffer;
+        std::vector<VkCommandBuffer> commandBuffers;
     };
 }

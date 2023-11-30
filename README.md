@@ -13,3 +13,7 @@ Make and run the app.
 make
 ./first_app.out
 ``` 
+or
+```bash
+make test
+``` 
