@@ -8,5 +8,5 @@ layout (location = 0) out vec4 outColor;
 
 void main() {
     // RGB and alpha, each value from 0 to 1
-    outColor = vec4(1.0, 0.0, 0.0, 1.0);
+    outColor = vec4(1.0, 1.0, 0.0, 1.0);
 }
