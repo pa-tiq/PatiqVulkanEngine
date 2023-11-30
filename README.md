@@ -4,8 +4,12 @@ Follow [this](https://vulkan-tutorial.com/Development_environment#page_Linux) tu
 
 Compile the shaders to obtain the .spv files.
 The files will be outputed in the shaders folder.
-# ./compile.sh
+```bash
+./compile.sh 
+``` 
 
 Make and run the app.
-# make
-# ./first_app.out
+```bash
+make
+./first_app.out
+``` 
