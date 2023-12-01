@@ -4,6 +4,7 @@
 #include "pve_pipeline.hpp"
 #include "pve_device.hpp"
 #include "pve_swap_chain.hpp"
+#include "pve_model.hpp"
 
 #include <memory>
 #include <vector>
@@ -25,6 +26,7 @@ namespace pve
         void run();
 
     private:
+        void loadModels();
         void createPipelineLayout();
         void createPipeline();
         void createCommandBuffers();
@@ -37,5 +39,6 @@ namespace pve
         std::unique_ptr<PvePipeline> pvePipeline;
         VkPipelineLayout pipelineLayout;
         std::vector<VkCommandBuffer> commandBuffers;
+        std::unique_ptr<PveModel> pveModel;
     };
 }

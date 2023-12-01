@@ -5,11 +5,16 @@
 // As input, the vertex shader will get each vertex as input from the Assembler stage, 
 // and then needs to output a position.
 
-vec2 positions[3] = vec2[] (
-    vec2(0.0, -0.5),
-    vec2(0.5, 0.5),
-    vec2(-0.5, 0.5)
-);
+// "in" signifies this variable takes its value from a vertex buffer
+// "layout(location)" sets the storage of where this variable value will come from
+// this is how we connect the attribute description to the variable we mean to referenc in the shader
+layout(location = 0) in vec2 position;
+
+// vec2 positions[3] = vec2[] (
+//     vec2(0.0, -0.5),
+//     vec2(0.5, 0.5),
+//     vec2(-0.5, 0.5)
+// );
 
 void main() {
 // the gl_Position is a 4-dimensional vector that maps to the output frame buffer image.
@@ -21,5 +26,8 @@ void main() {
 // in subsequent graphics pipeline stages, th gl_Position vector is turned into a normalized
 // coordinate by dividing the whole vector by its last component.
 // the 4th parameter is what the vector will be divided by.
-    gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
+// gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
+
+// the position attribute will automatically be set with the value from the vertex buffer
+    gl_Position = vec4(position, 0.0, 1.0);
 }

@@ -19,6 +19,7 @@ $(TARGET): *.cpp *.hpp
 # make shader targets
 # $@ is the name of the target being generated
 # $< is the first prerequisite (usually a source file)
+# each spv file depends on itself without the spv extension
 %.spv: %
 	${GLSLC_PATH} $< -o $@
 

@@ -1,12 +1,14 @@
 #include "first_app.hpp"
 
 #include <stdexcept>
+#include <array>
 
 namespace pve
 {
 
     FirstApp::FirstApp()
     {
+        loadModels();
         createPipelineLayout();
         createPipeline();
         createCommandBuffers();
@@ -28,6 +30,16 @@ namespace pve
 
         // this makes the CPU block until all GPU operations have completed
         vkDeviceWaitIdle(pveDevice.device());
+    }
+
+    void FirstApp::loadModels(){
+        // this will initialize vertex data positions
+        std::vector<PveModel::Vertex> vertices {
+            {{0.0f,-0.5f}},
+            {{0.5f,0.5f}},
+            {{-0.5f,0.5f}}
+        };
+        pveModel = std::make_unique<PveModel>(pveDevice, vertices);
     }
 
     void FirstApp::createPipelineLayout()
@@ -102,8 +114,13 @@ namespace pve
 
             vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+            // commandBuffer in each render pass will bind our graphics pipeline,
+            // then bind our model, which contains the vertex data, and then record a
+            // command buffer to draw every vertex contained by the model
             pvePipeline->bind(commandBuffers[i]);
-            vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+            pveModel->bind(commandBuffers[i]);
+            pveModel->draw(commandBuffers[i]);
+            
             vkCmdEndRenderPass(commandBuffers[i]);
 
             if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS)
