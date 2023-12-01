@@ -6,6 +6,10 @@
 namespace pve
 {
 
+    static glm::vec3 red = {1.0f, 0.0f, 0.0f};
+    static glm::vec3 green = {0.0f, 1.0f, 0.0f};
+    static glm::vec3 blue = {0.0f, 0.0f, 1.0f};
+
     FirstApp::FirstApp()
     {
         loadModels();
@@ -40,28 +44,31 @@ namespace pve
         glm::vec2 top
         ){
             if(depth<=0){
-                vertices.push_back({top});
-                vertices.push_back({right});
-                vertices.push_back({left});
+                vertices.push_back({top,red});
+                vertices.push_back({right,green});
+                vertices.push_back({left,blue});
             } else {
                 auto leftTop = 0.5f * (left + top);
                 auto rightTop = 0.5f * (right + top);
                 auto leftRight = 0.5f * (left + right);
-                sierpinski(vertices, depth-1, left,leftRight, leftTop);
-                sierpinski(vertices, depth-1, leftRight,right, rightTop);
-                sierpinski(vertices, depth-1, leftTop,rightTop, top);
+                sierpinski(vertices, depth-1, left, leftRight, leftTop);
+                sierpinski(vertices, depth-1, leftRight, right, rightTop);
+                sierpinski(vertices, depth-1, leftTop, rightTop, top);
             }
         }
 
     void FirstApp::loadModels(){
         // this will initialize vertex data positions
         // std::vector<PveModel::Vertex> vertices {
-        //     {{0.0f,-0.5f}},
-        //     {{0.5f,0.5f}},
-        //     {{-0.5f,0.5f}}
+        //     {{0.0f,-0.5f},red},
+        //     {{0.5f,0.5f},green},
+        //     {{-0.5f,0.5f},blue}
         // };
         std::vector<PveModel::Vertex> vertices{};
-        sierpinski(vertices, 5,{-0.5f,0.5f},{0.5f,0.5f},{0.0f,-0.5f});
+        sierpinski(vertices, 5,
+            {-0.5f,0.5f},
+            {0.5f,0.5f},
+            {0.0f,-0.5f});
         pveModel = std::make_unique<PveModel>(pveDevice, vertices);
     }
 
