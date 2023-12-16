@@ -21,7 +21,7 @@ namespace pve
     ~PveSwapChain();
 
     PveSwapChain(const PveSwapChain &) = delete;
-    void operator=(const PveSwapChain &) = delete;
+    PveSwapChain &operator=(const PveSwapChain &) = delete;
 
     VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
     VkRenderPass getRenderPass() { return renderPass; }

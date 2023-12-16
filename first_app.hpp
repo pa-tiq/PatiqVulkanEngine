@@ -37,10 +37,15 @@ namespace pve
         void createPipeline();
         void createCommandBuffers();
         void drawFrame();
+        void recreateSwapChain();
+        void recordCommandBuffer(int imageIndex);
 
         PveWindow pveWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
         PveDevice pveDevice{pveWindow};
-        PveSwapChain pveSwapChain{pveDevice, pveWindow.getExtent()};
+        // by using a unique pointer to the swap chain, rather than a stack-allocated value,
+        // we can easily create a new swap chain with an updated width and height simply by constructing a new object
+        // however, using pointers come with a small performance cost
+        std::unique_ptr<PveSwapChain> pveSwapChain;
         // a smart pointer simulates a pointer but with the addition of automatic memory management
         std::unique_ptr<PvePipeline> pvePipeline;
         VkPipelineLayout pipelineLayout;
