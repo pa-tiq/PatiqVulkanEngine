@@ -57,28 +57,29 @@ namespace pve
         // vertex shader stage and fragment shader stage
         VkPipelineShaderStageCreateInfo shaderStages[2];
         shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+        shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT; // this shader stage is for the vertex shader
         shaderStages[0].module = vertShaderModule;
-        shaderStages[0].pName = "main";
+        shaderStages[0].pName = "main"; // name of the entry function in the vertex shader
         shaderStages[0].flags = 0;
         shaderStages[0].pNext = nullptr;
-        shaderStages[0].pSpecializationInfo = nullptr;
+        shaderStages[0].pSpecializationInfo = nullptr; // mechanism to customize shader functionality
 
         shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT; // this shader stage is for the fragment shader
         shaderStages[1].module = fragShaderModule;
-        shaderStages[1].pName = "main";
+        shaderStages[1].pName = "main"; // name of the entry function in the fragment shader
         shaderStages[1].flags = 0;
         shaderStages[1].pNext = nullptr;
         shaderStages[1].pSpecializationInfo = nullptr;
 
         auto bindingDescriptions = PveModel::Vertex::getBindingDescriptions();
         auto attributeDescriptions = PveModel::Vertex::getAttributeDescriptions();
+
         // describe how we interpret the vertex buffer data that is the initial input into the graphics pipeline
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-        vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());;
+        vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
         vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
@@ -157,7 +158,7 @@ namespace pve
 
         // the rasterization stage breaks up our geometry into fragments for each pixel overlaps
         // > depthClampEnable forces the Z component of gl_Position to be between 0 and 1.
-        // We don't want this, since values lesser than 1 means the object is behind the
+        // We don't want this, since values lesser than 0 means the object is behind the
         // camera, and Z being greater than 1 is like the object being too far away to see.
         // using this requires enabling a GPU feature.
         // > rasterizerDiscardEnable discards all primitives before rasterization
