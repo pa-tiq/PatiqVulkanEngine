@@ -20,8 +20,8 @@ namespace pve
     {
         // Initialize the GLFW library
         glfwInit();
-        // Tell GLFW not to create an OpenGL context since we're using Vulkan.
         // GLFW was originally designed to create an OpenGL context when a window is created.
+        // With GLFW_NO_API I'm telling GLFW not to create an OpenGL context since we're using Vulkan.
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         // Disable our window from being resized after creation
         // We'll handle window resizes in a special way

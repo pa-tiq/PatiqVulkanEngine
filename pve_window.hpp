@@ -17,10 +17,10 @@ namespace pve
         PveWindow(int w, int h, std::string name);
         ~PveWindow();
 
-        // resource creation happens when we initialize our variables and cleanups are performed
-        // by the destructors. We don't want to accidentally copy a PVE window and then have 
-        // two pointers to the GLFW window. if this happens, when one of these object's destructors
-        // are called, the shared GLFW window would be terminated and we'd be left with a dangling pointer
+        // resource creation happens when we initialize our variables.
+        // cleanups are performed by the destructors. 
+        // We don't want to accidentally copy a PVE window and then have two pointers to the GLFW window. 
+        // if this happens, when one of these object's destructors are called, the shared GLFW window would be terminated and we'd be left with a dangling pointer
         PveWindow(const PveWindow &) = delete;
         PveWindow &operator = (const PveWindow &) = delete;
 
