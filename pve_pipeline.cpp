@@ -18,10 +18,11 @@ namespace pve
         createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
     }
 
-    PvePipeline::~PvePipeline(){
-        vkDestroyShaderModule(pveDevice.device(),vertShaderModule,nullptr);
-        vkDestroyShaderModule(pveDevice.device(),fragShaderModule,nullptr);
-        vkDestroyPipeline(pveDevice.device(),graphicsPipeline,nullptr);
+    PvePipeline::~PvePipeline()
+    {
+        vkDestroyShaderModule(pveDevice.device(), vertShaderModule, nullptr);
+        vkDestroyShaderModule(pveDevice.device(), fragShaderModule, nullptr);
+        vkDestroyPipeline(pveDevice.device(), graphicsPipeline, nullptr);
     }
 
     std::vector<char> PvePipeline::readFile(const std::string &filepath)
@@ -111,7 +112,8 @@ namespace pve
         pipelineInfo.basePipelineIndex = -1;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-        if (vkCreateGraphicsPipelines(pveDevice.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS){
+        if (vkCreateGraphicsPipelines(pveDevice.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
+        {
             throw std::runtime_error("Failed to create graphics pipeline");
         }
     }
@@ -128,8 +130,9 @@ namespace pve
             throw std::runtime_error("Failed to create shader module");
         }
     }
-    
-    void PvePipeline::bind(VkCommandBuffer commandBuffer){
+
+    void PvePipeline::bind(VkCommandBuffer commandBuffer)
+    {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
     }
 

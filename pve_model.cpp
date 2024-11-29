@@ -55,6 +55,7 @@ namespace pve
         VkBuffer buffers[] = {vertexBuffer};
         VkDeviceSize offsets[] = {0};
         // record to commandBuffer to bind one vertexBuffer starting at binding 0 with offset of 0 into the buffer
+        // when we want to add multiple bindings, just add additional elements to the arrays
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
     }
 
@@ -64,6 +65,9 @@ namespace pve
         bindingDescriptions[0].binding = 0;
         bindingDescriptions[0].stride = sizeof(Vertex);
         bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        // this binding description corresponds to a single vertex buffer.
+        // it will occupy the first binding and index 0.
         return bindingDescriptions;
     }
 

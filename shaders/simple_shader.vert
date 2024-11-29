@@ -7,18 +7,11 @@
 
 // "in" signifies this variable takes its value from a vertex buffer
 // "layout(location)" sets the storage of where this variable value will come from
-// this is how we connect the attribute description to the variable we mean to referenc in the shader
+// this is how we connect the attribute description to the variable we mean to reference in the shader
 layout(location = 0) in vec2 position;
 layout(location = 1) in vec3 color;
 
 layout(location = 0) out vec3 fragColor;
-
-
-// vec2 positions[3] = vec2[] (
-//     vec2(0.0, -0.5),
-//     vec2(0.5, 0.5),
-//     vec2(-0.5, 0.5)
-// );
 
 void main() {
 // the gl_Position is a 4-dimensional vector that maps to the output frame buffer image.

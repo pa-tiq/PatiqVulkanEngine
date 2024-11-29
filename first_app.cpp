@@ -37,38 +37,41 @@ namespace pve
     }
 
     void FirstApp::sierpinski(
-        std::vector<PveModel::Vertex> &vertices, 
+        std::vector<PveModel::Vertex> &vertices,
         int depth,
         glm::vec2 left,
         glm::vec2 right,
-        glm::vec2 top
-        ){
-            if(depth<=0){
-                vertices.push_back({top,red});
-                vertices.push_back({right,green});
-                vertices.push_back({left,blue});
-            } else {
-                auto leftTop = 0.5f * (left + top);
-                auto rightTop = 0.5f * (right + top);
-                auto leftRight = 0.5f * (left + right);
-                sierpinski(vertices, depth-1, left, leftRight, leftTop);
-                sierpinski(vertices, depth-1, leftRight, right, rightTop);
-                sierpinski(vertices, depth-1, leftTop, rightTop, top);
-            }
+        glm::vec2 top)
+    {
+        if (depth <= 0)
+        {
+            vertices.push_back({top, red});
+            vertices.push_back({right, green});
+            vertices.push_back({left, blue});
         }
+        else
+        {
+            auto leftTop = 0.5f * (left + top);
+            auto rightTop = 0.5f * (right + top);
+            auto leftRight = 0.5f * (left + right);
+            sierpinski(vertices, depth - 1, left, leftRight, leftTop);
+            sierpinski(vertices, depth - 1, leftRight, right, rightTop);
+            sierpinski(vertices, depth - 1, leftTop, rightTop, top);
+        }
+    }
 
-    void FirstApp::loadModels(){
+    void FirstApp::loadModels()
+    {
         // this will initialize vertex data positions
-        // std::vector<PveModel::Vertex> vertices {
-        //     {{0.0f,-0.5f},red},
-        //     {{0.5f,0.5f},green},
-        //     {{-0.5f,0.5f},blue}
-        // };
-        std::vector<PveModel::Vertex> vertices{};
-        sierpinski(vertices, 5,
-            {-0.5f,0.5f},
-            {0.5f,0.5f},
-            {0.0f,-0.5f});
+        std::vector<PveModel::Vertex> vertices{
+            {{0.0f, -0.5f}, red},
+            {{0.5f, 0.5f}, green},
+            {{-0.5f, 0.5f}, blue}};
+        // std::vector<PveModel::Vertex> vertices{};
+        // sierpinski(vertices, 5,
+        //     {-0.5f,0.5f},
+        //     {0.5f,0.5f},
+        //     {0.0f,-0.5f});
         pveModel = std::make_unique<PveModel>(pveDevice, vertices);
     }
 
@@ -150,7 +153,7 @@ namespace pve
             pvePipeline->bind(commandBuffers[i]);
             pveModel->bind(commandBuffers[i]);
             pveModel->draw(commandBuffers[i]);
-            
+
             vkCmdEndRenderPass(commandBuffers[i]);
 
             if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS)
