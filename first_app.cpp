@@ -10,6 +10,7 @@ namespace pve {
 
 // temporary
 struct SimplePushConstantData {
+    glm::mat2 transform{1.f}; // initialized as an identity matrix
     glm::vec2 offset;
     alignas(16) glm::vec3 color; // alignas: tutorial 9 at 09:00
 };
@@ -19,7 +20,7 @@ static glm::vec3 green = {0.0f, 1.0f, 0.0f};
 static glm::vec3 blue = {0.0f, 0.0f, 1.0f};
 
 FirstApp::FirstApp() {
-    loadModels();
+    loadGameObjects();
     createPipelineLayout();
     recreateSwapChain();
     createCommandBuffers();
@@ -60,7 +61,7 @@ void FirstApp::sierpinski(
     }
 }
 
-void FirstApp::loadModels() {
+void FirstApp::loadGameObjects() {
     // this will initialize vertex data positions
     std::vector<PveModel::Vertex> vertices{
         {{0.0f, -0.5f}, red},
@@ -71,7 +72,16 @@ void FirstApp::loadModels() {
     //            {-0.5f, 0.5f},
     //            {0.5f, 0.5f},
     //            {0.0f, -0.5f});
-    pveModel = std::make_unique<PveModel>(pveDevice, vertices);
+
+    // make_shared allows us to use one model instance that can be used by multiple game objects
+    // and it will stay in memory as long as one game object is still using it
+    auto pveModel = std::make_shared<PveModel>(pveDevice, vertices);
+
+    auto triangle = PveGameObject::createGameObject();
+    triangle.model = pveModel;
+    triangle.color = {.1f,.8f,.1f};
+    triangle.transform2d.translation.x = .2f; // move slightly to the right
+    gameObjects.push_back(std::move(triangle));
 }
 
 void FirstApp::createPipelineLayout() {
@@ -153,9 +163,6 @@ void FirstApp::freeCommandBuffers() {
 }
 
 void FirstApp::recordCommandBuffer(int imageIndex) {
-    // Animation
-    static int frame = 0;
-    frame = (frame + 1) % 1000;
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -196,29 +203,33 @@ void FirstApp::recordCommandBuffer(int imageIndex) {
     // commandBuffer in each render pass will bind our graphics pipeline,
     // then bind our model, which contains the vertex data, and then record a
     // command buffer to draw every vertex contained by the model
-    pvePipeline->bind(commandBuffers[imageIndex]);
-    pveModel->bind(commandBuffers[imageIndex]);
-
-    for (int j = 0; j < 4; j++) {
-        SimplePushConstantData push{};
-        push.offset = {-0.5f + frame * 0.002f, -0.4f + j * 0.25f};
-        push.color = {0.0f, 0.0f, 0.2f + 0.2f * j};
-        vkCmdPushConstants(
-            commandBuffers[imageIndex],
-            pipelineLayout,
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0,
-            sizeof(SimplePushConstantData),
-            &push);
-
-        pveModel->draw(commandBuffers[imageIndex]);
-    }
+    renderGameObjects(commandBuffers[imageIndex]);
 
     vkCmdEndRenderPass(commandBuffers[imageIndex]);
 
     if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
         throw std::runtime_error("Failed to record command buffer");
     }
+}
+
+void FirstApp::renderGameObjects(VkCommandBuffer commandBuffer){
+    pvePipeline->bind(commandBuffer);
+    for (auto &obj: gameObjects){
+                SimplePushConstantData push{};
+        push.offset = obj.transform2d.translation;
+        push.color = obj.color;
+        push.transform = obj.transform2d.mat2();
+        vkCmdPushConstants(
+            commandBuffer,
+            pipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            0,
+            sizeof(SimplePushConstantData),
+            &push);
+        obj.model->bind(commandBuffer);
+        obj.model->draw(commandBuffer);
+    }
+
 }
 
 void FirstApp::drawFrame() {

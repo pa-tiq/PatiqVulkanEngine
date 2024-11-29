@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "pve_game_object.hpp"
 #include "pve_device.hpp"
 #include "pve_model.hpp"
 #include "pve_pipeline.hpp"
@@ -30,7 +31,7 @@ class FirstApp {
         glm::vec2 left,
         glm::vec2 right,
         glm::vec2 top);
-    void loadModels();
+    void loadGameObjects();
     void createPipelineLayout();
     void createPipeline();
     void createCommandBuffers();
@@ -38,6 +39,7 @@ class FirstApp {
     void drawFrame();
     void recreateSwapChain();
     void recordCommandBuffer(int imageIndex);
+    void renderGameObjects(VkCommandBuffer commandBuffer);
 
     PveWindow pveWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
     PveDevice pveDevice{pveWindow};
@@ -46,6 +48,6 @@ class FirstApp {
     std::unique_ptr<PvePipeline> pvePipeline;
     VkPipelineLayout pipelineLayout;
     std::vector<VkCommandBuffer> commandBuffers;
-    std::unique_ptr<PveModel> pveModel;
+    std::vector<PveGameObject> gameObjects;
 };
 }  // namespace pve
