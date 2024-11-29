@@ -5,6 +5,7 @@
 #define GLM_FORCE_RADIANS            // No matter what system i'm in, angles are in radians, not degrees
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE  // Forces GLM to expect depth buffer values to range from 0 to 1 instead of -1 to 1 (the opengl standard)
 #include <glm/glm.hpp>
+
 #include <vector>
 
 namespace pve {
