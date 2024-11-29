@@ -1,19 +1,15 @@
-#include "first_app.hpp"
-
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 
-int main()
-{
+#include "first_app.hpp"
+
+int main() {
     pve::FirstApp app{};
 
-    try
-    {
+    try {
         app.run();
-    }
-    catch (const std::exception &e)
-    {
+    } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return EXIT_FAILURE;
     }

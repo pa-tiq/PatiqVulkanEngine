@@ -9,19 +9,17 @@
 #include <string>
 #include <vector>
 
-namespace pve
-{
+namespace pve {
 
-  class PveSwapChain
-  {
-  public:
+class PveSwapChain {
+   public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
     PveSwapChain(PveDevice &deviceRef, VkExtent2D windowExtent);
     ~PveSwapChain();
 
     PveSwapChain(const PveSwapChain &) = delete;
-    void operator=(const PveSwapChain &) = delete;
+    PveSwapChain &operator=(const PveSwapChain &) = delete;
 
     VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
     VkRenderPass getRenderPass() { return renderPass; }
@@ -32,16 +30,15 @@ namespace pve
     uint32_t width() { return swapChainExtent.width; }
     uint32_t height() { return swapChainExtent.height; }
 
-    float extentAspectRatio()
-    {
-      return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
+    float extentAspectRatio() {
+        return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
     }
     VkFormat findDepthFormat();
 
     VkResult acquireNextImage(uint32_t *imageIndex);
     VkResult submitCommandBuffers(const VkCommandBuffer *buffers, uint32_t *imageIndex);
 
-  private:
+   private:
     void createSwapChain();
     void createImageViews();
     void createDepthResources();
@@ -78,6 +75,6 @@ namespace pve
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
     size_t currentFrame = 0;
-  };
+};
 
-} // namespace lve
+}  // namespace pve
