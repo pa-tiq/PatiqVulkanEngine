@@ -4,7 +4,8 @@
 #include <cstring>
 
 namespace pve {
-PveModel::PveModel(PveDevice &device, const std::vector<Vertex> &vertices) : pveDevice{device} {
+PveModel::PveModel(PveDevice &device, const std::vector<Vertex> &vertices)
+    : pveDevice{device} {
     createVertexBuffer(vertices);
 }
 
@@ -26,8 +27,7 @@ void PveModel::createVertexBuffer(const std::vector<Vertex> &vertices) {
         // this is necessary for the host to be able to write to the device's memory
         // COHERENT keeps the host and device memory regions consistent with each other
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        vertexBuffer,
-        vertexBufferMemory);
+        vertexBuffer, vertexBufferMemory);
 
     void *data;
 
@@ -64,7 +64,8 @@ std::vector<VkVertexInputBindingDescription> PveModel::Vertex::getBindingDescrip
     return bindingDescriptions;
 }
 
-std::vector<VkVertexInputAttributeDescription> PveModel::Vertex::getAttributeDescriptions() {
+std::vector<VkVertexInputAttributeDescription>
+PveModel::Vertex::getAttributeDescriptions() {
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;

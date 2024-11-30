@@ -17,13 +17,16 @@ class PveSwapChain {
     static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
     PveSwapChain(PveDevice &deviceRef, VkExtent2D windowExtent);
-    PveSwapChain(PveDevice &deviceRef, VkExtent2D windowExtent, std::shared_ptr<PveSwapChain> previous);
+    PveSwapChain(PveDevice &deviceRef, VkExtent2D windowExtent,
+                 std::shared_ptr<PveSwapChain> previous);
     ~PveSwapChain();
 
     PveSwapChain(const PveSwapChain &) = delete;
     PveSwapChain &operator=(const PveSwapChain &) = delete;
 
-    VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
+    VkFramebuffer getFrameBuffer(int index) {
+        return swapChainFramebuffers[index];
+    }
     VkRenderPass getRenderPass() { return renderPass; }
     VkImageView getImageView(int index) { return swapChainImageViews[index]; }
     size_t imageCount() { return swapChainImages.size(); }
@@ -33,12 +36,14 @@ class PveSwapChain {
     uint32_t height() { return swapChainExtent.height; }
 
     float extentAspectRatio() {
-        return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
+        return static_cast<float>(swapChainExtent.width) /
+               static_cast<float>(swapChainExtent.height);
     }
     VkFormat findDepthFormat();
 
     VkResult acquireNextImage(uint32_t *imageIndex);
-    VkResult submitCommandBuffers(const VkCommandBuffer *buffers, uint32_t *imageIndex);
+    VkResult submitCommandBuffers(const VkCommandBuffer *buffers,
+                                  uint32_t *imageIndex);
 
    private:
     void init();

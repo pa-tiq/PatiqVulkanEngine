@@ -26,11 +26,9 @@ struct PipelineConfigInfo {
 
 class PvePipeline {
    public:
-    PvePipeline(
-        PveDevice &device,
-        const std::string &vertFilepath,
-        const std::string &fragFilepath,
-        const PipelineConfigInfo &configInfo);
+    PvePipeline(PveDevice &device, const std::string &vertFilepath,
+                const std::string &fragFilepath,
+                const PipelineConfigInfo &configInfo);
     ~PvePipeline();
 
     PvePipeline(const PvePipeline &) = delete;
@@ -42,12 +40,12 @@ class PvePipeline {
 
    private:
     static std::vector<char> readFile(const std::string &filepath);
-    void createGraphicsPipeline(
-        const std::string &vertFilepath,
-        const std::string &fragFilepath,
-        const PipelineConfigInfo &configInfo);
+    void createGraphicsPipeline(const std::string &vertFilepath,
+                                const std::string &fragFilepath,
+                                const PipelineConfigInfo &configInfo);
 
-    void createShaderModule(const std::vector<char> &code, VkShaderModule *shaderModule);
+    void createShaderModule(const std::vector<char> &code,
+                            VkShaderModule *shaderModule);
 
     PveDevice &pveDevice;
     VkPipeline graphicsPipeline;
