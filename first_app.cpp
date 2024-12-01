@@ -1,5 +1,8 @@
 #include "first_app.hpp"
 
+#include "gravity_physics_system.hpp"
+#include "simple_render_system.hpp"
+
 #define GLM_FORCE_RADIANS  // No matter what system i'm in, angles are in radians, not degrees
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE  // Forces GLM to expect depth buffer values to range from 0 to 1 instead of -1 to 1 (the opengl standard)
 #include <array>
@@ -10,28 +13,17 @@
 
 namespace pve {
 
-// temporary
-struct SimplePushConstantData {
-    glm::mat2 transform{1.f};  // initialized as an identity matrix
-    glm::vec2 offset;
-    alignas(16) glm::vec3 color;  // alignas: tutorial 9 at 09:00
-};
-
 static glm::vec3 red = {1.0f, 0.0f, 0.0f};
 static glm::vec3 green = {0.0f, 1.0f, 0.0f};
 static glm::vec3 blue = {0.0f, 0.0f, 1.0f};
 
-FirstApp::FirstApp() {
-    loadGameObjects();
-    createPipelineLayout();
-    createPipeline();
-}
+FirstApp::FirstApp() { loadGameObjects(); }
 
-FirstApp::~FirstApp() {
-    vkDestroyPipelineLayout(pveDevice.device(), pipelineLayout, nullptr);
-}
+FirstApp::~FirstApp() {}
 
 void FirstApp::run() {
+    SimpleRenderSystem simpleRenderSystem{pveDevice,
+                                          pveRenderer.getSwapChainRenderPass()};
     // while the window doesn't want to close, poll window events
     while (!pveWindow.shouldClose()) {
         glfwPollEvents();
@@ -39,8 +31,8 @@ void FirstApp::run() {
         // the beginFrame function returns a nullptr if the swap chains needs to be recreated
         if (auto commandBuffer = pveRenderer.beginFrame()) {
             pveRenderer.beginSwapChainRenderPass(commandBuffer);
-            renderGameObjects(commandBuffer);
-            pveRenderer.endSwapChaniRenderPass(commandBuffer);
+            simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects);
+            pveRenderer.endSwapChainRenderPass(commandBuffer);
             pveRenderer.endFrame();
         }
     }
@@ -49,7 +41,103 @@ void FirstApp::run() {
     vkDeviceWaitIdle(pveDevice.device());
 }
 
-void FirstApp::sierpinski(std::vector<PveModel::Vertex> &vertices, int depth,
+void FirstApp::runGravityPhisics() {
+    // create some models
+    std::shared_ptr<PveModel> squareModel = createSquareModel(
+        pveDevice,
+        {.5f,
+         .0f});  // offset model by .5 so rotation occurs at edge rather than center of square
+    std::shared_ptr<PveModel> circleModel = createCircleModel(pveDevice, 64);
+
+    // create physics objects
+    std::vector<PveGameObject> physicsObjects{};
+    auto red = PveGameObject::createGameObject();
+    red.transform2d.scale = glm::vec2{.05f};
+    red.transform2d.translation = {.5f, .5f};
+    red.color = {1.f, 0.f, 0.f};
+    red.rigidBody2d.velocity = {-.5f, .0f};
+    red.model = circleModel;
+    physicsObjects.push_back(std::move(red));
+    auto blue = PveGameObject::createGameObject();
+    blue.transform2d.scale = glm::vec2{.05f};
+    blue.transform2d.translation = {-.45f, -.25f};
+    blue.color = {0.f, 0.f, 1.f};
+    blue.rigidBody2d.velocity = {.5f, .0f};
+    blue.model = circleModel;
+    physicsObjects.push_back(std::move(blue));
+
+    // create vector field
+    std::vector<PveGameObject> vectorField{};
+    int gridCount = 40;
+    for (int i = 0; i < gridCount; i++) {
+        for (int j = 0; j < gridCount; j++) {
+            auto vf = PveGameObject::createGameObject();
+            vf.transform2d.scale = glm::vec2(0.005f);
+            vf.transform2d.translation = {-1.0f + (i + 0.5f) * 2.0f / gridCount,
+                                          -1.0f + (j + 0.5f) * 2.0f / gridCount};
+            vf.color = glm::vec3(1.0f);
+            vf.model = squareModel;
+            vectorField.push_back(std::move(vf));
+        }
+    }
+
+    GravityPhysicsSystem gravitySystem{0.81f};
+    Vec2FieldSystem vecFieldSystem{};
+
+    SimpleRenderSystem simpleRenderSystem{pveDevice,
+                                          pveRenderer.getSwapChainRenderPass()};
+
+    while (!pveWindow.shouldClose()) {
+        glfwPollEvents();
+
+        if (auto commandBuffer = pveRenderer.beginFrame()) {
+            // update systems
+            gravitySystem.update(physicsObjects, 1.f / 60, 5);
+            vecFieldSystem.update(gravitySystem, physicsObjects, vectorField);
+
+            // render system
+            pveRenderer.beginSwapChainRenderPass(commandBuffer);
+            simpleRenderSystem.renderGameObjects(commandBuffer, physicsObjects);
+            simpleRenderSystem.renderGameObjects(commandBuffer, vectorField);
+            pveRenderer.endSwapChainRenderPass(commandBuffer);
+            pveRenderer.endFrame();
+        }
+    }
+
+    vkDeviceWaitIdle(pveDevice.device());
+}
+
+std::unique_ptr<PveModel> FirstApp::createSquareModel(PveDevice& device,
+                                                      glm::vec2 offset) {
+    std::vector<PveModel::Vertex> vertices = {
+        {{-0.5f, -0.5f}}, {{0.5f, 0.5f}},  {{-0.5f, 0.5f}},
+        {{-0.5f, -0.5f}}, {{0.5f, -0.5f}}, {{0.5f, 0.5f}},  //
+    };
+    for (auto& v : vertices) {
+        v.position += offset;
+    }
+    return std::make_unique<PveModel>(device, vertices);
+}
+
+std::unique_ptr<PveModel> FirstApp::createCircleModel(PveDevice& device,
+                                                      unsigned int numSides) {
+    std::vector<PveModel::Vertex> uniqueVertices{};
+    for (int i = 0; i < numSides; i++) {
+        float angle = i * glm::two_pi<float>() / numSides;
+        uniqueVertices.push_back({{glm::cos(angle), glm::sin(angle)}});
+    }
+    uniqueVertices.push_back({});  // adds center vertex at 0, 0
+
+    std::vector<PveModel::Vertex> vertices{};
+    for (int i = 0; i < numSides; i++) {
+        vertices.push_back(uniqueVertices[i]);
+        vertices.push_back(uniqueVertices[(i + 1) % numSides]);
+        vertices.push_back(uniqueVertices[numSides]);
+    }
+    return std::make_unique<PveModel>(device, vertices);
+}
+
+void FirstApp::sierpinski(std::vector<PveModel::Vertex>& vertices, int depth,
                           glm::vec2 left, glm::vec2 right, glm::vec2 top) {
     if (depth <= 0) {
         vertices.push_back({top, red});
@@ -109,7 +197,7 @@ void FirstApp::crazyTriangles() {
                                   {1.f, 1.f, .73f},
                                   {.73f, 1.f, .8f},
                                   {.73, .88f, 1.f}};
-    for (auto &color : colors) {
+    for (auto& color : colors) {
         color = glm::pow(color, glm::vec3{2.2f});
     }
     for (int i = 0; i < 40; i++) {
@@ -122,66 +210,22 @@ void FirstApp::crazyTriangles() {
     }
 }
 
-void FirstApp::loadGameObjects() { crazyTriangles(); }
+void FirstApp::GravityPhisics() {
+    std::vector<PveModel::Vertex> vertices{{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                                           {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+                                           {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+    auto pveModel = std::make_shared<PveModel>(pveDevice, vertices);
 
-void FirstApp::createPipelineLayout() {
-    VkPushConstantRange pushConstantRange{};
-    pushConstantRange.stageFlags =
-        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-    pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(SimplePushConstantData);
+    auto triangle = PveGameObject::createGameObject();
+    triangle.model = pveModel;
+    triangle.color = {.1f, .8f, .1f};
+    triangle.transform2d.translation.x = .2f;
+    triangle.transform2d.scale = {2.f, .5f};
+    triangle.transform2d.rotation = .25f * glm::two_pi<float>();
 
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pSetLayouts = nullptr;
-    pipelineLayoutInfo.pushConstantRangeCount = 1;
-    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-
-    if (vkCreatePipelineLayout(pveDevice.device(), &pipelineLayoutInfo, nullptr,
-                               &pipelineLayout) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create pipeline layout");
-    }
+    gameObjects.push_back(std::move(triangle));
 }
 
-void FirstApp::createPipeline() {
-    assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
-
-    PipelineConfigInfo pipelineConfig{};
-    PvePipeline::defaultPipelineConfigInfo(pipelineConfig);
-    // a render pass describes the structure and format of our frame buffer objects and their attachments
-    // it's a blueprint that tells a graphics pipeline object what layout to expect from the output frame buffer
-    // when it's time to actually render, the graphics pipeline is already prepared to output to our frame buffer,
-    // as long as the passed frame buffer object is setup in a way that is compatible with what we specified in the render pass.
-    // multiple subpasses can be grouped together into a single render pass
-    pipelineConfig.renderPass = pveRenderer.getSwapChainRenderPass();
-    pipelineConfig.pipelineLayout = pipelineLayout;
-    pvePipeline =
-        std::make_unique<PvePipeline>(pveDevice, "shaders/simple_shader.vert.spv",
-                                      "shaders/simple_shader.frag.spv", pipelineConfig);
-}
-
-void FirstApp::renderGameObjects(VkCommandBuffer commandBuffer) {
-    // update
-    int i = 0;
-    for (auto &obj : gameObjects) {
-        i += 1;
-        obj.transform2d.rotation = glm::mod<float>(obj.transform2d.rotation + 0.001f * i,
-                                                   2.f * glm::pi<float>());
-    }
-    // render
-    pvePipeline->bind(commandBuffer);
-    for (auto &obj : gameObjects) {
-        SimplePushConstantData push{};
-        push.offset = obj.transform2d.translation;
-        push.color = obj.color;
-        push.transform = obj.transform2d.mat2();
-        vkCmdPushConstants(commandBuffer, pipelineLayout,
-                           VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                           sizeof(SimplePushConstantData), &push);
-        obj.model->bind(commandBuffer);
-        obj.model->draw(commandBuffer);
-    }
-}
+void FirstApp::loadGameObjects() { GravityPhisics(); }
 
 }  // namespace pve

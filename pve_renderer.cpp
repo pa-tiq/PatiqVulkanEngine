@@ -24,18 +24,17 @@ void PveRenderer::recreateSwapChain() {
     if (pveSwapChain == nullptr) {
         pveSwapChain = std::make_unique<PveSwapChain>(pveDevice, extent);
     } else {
+        std::shared_ptr<PveSwapChain> oldSwapChain = std::move(pveSwapChain);
         // the move function allows us to create a copy, but setting pveSwapChain to a nullptr
-        pveSwapChain =
-            std::make_unique<PveSwapChain>(pveDevice, extent, std::move(pveSwapChain));
-        if (pveSwapChain->imageCount() != commandBuffers.size()) {
-            freeCommandBuffers();
-            createCommandBuffers();
+        pveSwapChain = std::make_unique<PveSwapChain>(pveDevice, extent, oldSwapChain);
+        if (!oldSwapChain->compareSwapFormats(*pveSwapChain.get())) {
+            throw std::runtime_error("Swap chain image(or depth) format has changed");
         }
     }
 }
 
 void PveRenderer::createCommandBuffers() {
-    commandBuffers.resize(pveSwapChain->imageCount());
+    commandBuffers.resize(PveSwapChain::MAX_FRAMES_IN_FLIGHT);
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -100,6 +99,7 @@ void PveRenderer::endFrame() {
         throw std::runtime_error("Failed to present swap chain image");
     }
     isFrameStarted = false;
+    currentFrameIndex = (currentFrameIndex + 1) % PveSwapChain::MAX_FRAMES_IN_FLIGHT;
 }
 
 void PveRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
@@ -138,7 +138,7 @@ void PveRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void PveRenderer::endSwapChaniRenderPass(VkCommandBuffer commandBuffer) {
+void PveRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer) {
     assert(isFrameStarted &&
            "Can't call endSwapChaniRenderPass while frame not in progress");
     assert(commandBuffer == getCurrentCommandBuffer() &&

@@ -22,13 +22,18 @@ class PveRenderer {
 
     VkCommandBuffer getCurrentCommandBuffer() const {
         assert(isFrameStarted && "Cannot get command buffer when frame not in progress");
-        return commandBuffers[currentImageIndex];
+        return commandBuffers[currentFrameIndex];
+    }
+
+    int getFrameIndex() const {
+        assert(isFrameStarted && "Cannot get frame index when frame not in progress");
+        return currentFrameIndex;
     }
 
     VkCommandBuffer beginFrame();
     void endFrame();
     void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
-    void endSwapChaniRenderPass(VkCommandBuffer commandBuffer);
+    void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 
    private:
     // Renderer: swapchain, command buffers and draw frame
@@ -43,6 +48,7 @@ class PveRenderer {
     std::vector<VkCommandBuffer> commandBuffers;
 
     uint32_t currentImageIndex;
-    bool isFrameStarted;
+    int currentFrameIndex{0};
+    bool isFrameStarted{false};
 };
 }  // namespace pve
