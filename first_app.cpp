@@ -38,7 +38,7 @@ void FirstApp::run() {
 
         // the beginFrame function returns a nullptr if the swap chains needs to be recreated
         if (auto commandBuffer = pveRenderer.beginFrame()) {
-            pveRenderer.beginSwapChaniRenderPass(commandBuffer);
+            pveRenderer.beginSwapChainRenderPass(commandBuffer);
             renderGameObjects(commandBuffer);
             pveRenderer.endSwapChaniRenderPass(commandBuffer);
             pveRenderer.endFrame();

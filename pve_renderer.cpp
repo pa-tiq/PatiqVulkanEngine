@@ -6,10 +6,6 @@
 
 namespace pve {
 
-static glm::vec3 red = {1.0f, 0.0f, 0.0f};
-static glm::vec3 green = {0.0f, 1.0f, 0.0f};
-static glm::vec3 blue = {0.0f, 0.0f, 1.0f};
-
 PveRenderer::PveRenderer(PveWindow &window, PveDevice &device)
     : pveWindow{window}, pveDevice{device} {
     recreateSwapChain();
@@ -54,7 +50,7 @@ void PveRenderer::createCommandBuffers() {
 
 void PveRenderer::freeCommandBuffers() {
     vkFreeCommandBuffers(pveDevice.device(), pveDevice.getCommandPool(),
-                         static_cast<float>(commandBuffers.size()),
+                         static_cast<uint32_t>(commandBuffers.size()),
                          commandBuffers.data());
     commandBuffers.clear();
 }
@@ -88,7 +84,7 @@ VkCommandBuffer PveRenderer::beginFrame() {
 }
 
 void PveRenderer::endFrame() {
-    assert(!isFrameStarted && "Can't call endFrame while frame not in progress");
+    assert(isFrameStarted && "Can't call endFrame while frame not in progress");
     auto commandBuffer = getCurrentCommandBuffer();
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to record command buffer");
@@ -105,9 +101,10 @@ void PveRenderer::endFrame() {
     }
     isFrameStarted = false;
 }
-void PveRenderer::beginSwapChaniRenderPass(VkCommandBuffer commandBuffer) {
-    assert(!isFrameStarted &&
-           "Can't call beginSwapChaniRenderPass while frame not in progress");
+
+void PveRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
+    assert(isFrameStarted &&
+           "Can't call beginSwapChainRenderPass while frame not in progress");
     assert(commandBuffer == getCurrentCommandBuffer() &&
            "Can't begin render pass on command buffer from a different frame");
 
@@ -142,7 +139,7 @@ void PveRenderer::beginSwapChaniRenderPass(VkCommandBuffer commandBuffer) {
 }
 
 void PveRenderer::endSwapChaniRenderPass(VkCommandBuffer commandBuffer) {
-    assert(!isFrameStarted &&
+    assert(isFrameStarted &&
            "Can't call endSwapChaniRenderPass while frame not in progress");
     assert(commandBuffer == getCurrentCommandBuffer() &&
            "Can't end render pass on command buffer from a different frame");

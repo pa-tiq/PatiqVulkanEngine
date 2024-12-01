@@ -1,10 +1,10 @@
 #pragma once
 
+#include <cassert>
 #include <memory>
 #include <vector>
 
 #include "pve_device.hpp"
-#include "pve_model.hpp"
 #include "pve_swap_chain.hpp"
 #include "pve_window.hpp"
 
@@ -27,7 +27,7 @@ class PveRenderer {
 
     VkCommandBuffer beginFrame();
     void endFrame();
-    void beginSwapChaniRenderPass(VkCommandBuffer commandBuffer);
+    void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
     void endSwapChaniRenderPass(VkCommandBuffer commandBuffer);
 
    private:
