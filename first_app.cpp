@@ -1,6 +1,7 @@
 #include "first_app.hpp"
 
 #include "colors.hpp"
+#include "pve_camera.hpp"
 #include "simple_render_system.hpp"
 
 #define GLM_FORCE_RADIANS            // No matter what system i'm in, angles are in radians, not degrees
@@ -21,14 +22,18 @@ FirstApp::~FirstApp() {}
 void FirstApp::run() {
     SimpleRenderSystem simpleRenderSystem{pveDevice,
                                           pveRenderer.getSwapChainRenderPass()};
+    PveCamera camera{};
     // while the window doesn't want to close, poll window events
     while (!pveWindow.shouldClose()) {
         glfwPollEvents();
+        float aspect = pveRenderer.getAspectRatio();
+        // camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
+        camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 10.f);
 
         // the beginFrame function returns a nullptr if the swap chains needs to be recreated
         if (auto commandBuffer = pveRenderer.beginFrame()) {
             pveRenderer.beginSwapChainRenderPass(commandBuffer);
-            simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects);
+            simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects, camera);
             pveRenderer.endSwapChainRenderPass(commandBuffer);
             pveRenderer.endFrame();
         }
@@ -101,7 +106,7 @@ void FirstApp::loadGameObjects() {
     std::shared_ptr<PveModel> pveModel = createCubeModel(pveDevice, {.0f, .0f, .0f});
     auto cube = PveGameObject::createGameObject();
     cube.model = pveModel;
-    cube.transform.translation = {.0f, .0f, .5f};
+    cube.transform.translation = {.0f, .0f, 2.5f};
     cube.transform.scale = {.5f, .5f, .5f};
     gameObjects.push_back(std::move(cube));
 }

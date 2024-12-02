@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "pve_camera.hpp"
 #include "pve_device.hpp"
 #include "pve_game_object.hpp"
 #include "pve_model.hpp"
@@ -19,7 +20,8 @@ class SimpleRenderSystem {
 
     // Renderer: swapchain, command buffers and draw frame
     void renderGameObjects(VkCommandBuffer commandBuffer,
-                           std::vector<PveGameObject> &gameObjects);
+                           std::vector<PveGameObject> &gameObjects,
+                           const PveCamera &camera);
 
    private:
     void createPipelineLayout();

@@ -18,6 +18,7 @@ class PveRenderer {
     PveRenderer &operator=(const PveRenderer &) = delete;
 
     VkRenderPass getSwapChainRenderPass() const { return pveSwapChain->getRenderPass(); }
+    float getAspectRatio() const { return pveSwapChain->extentAspectRatio(); }
     bool isFrameInProgress() const { return isFrameStarted; }
 
     VkCommandBuffer getCurrentCommandBuffer() const {
