@@ -1,5 +1,6 @@
 #include "first_app.hpp"
 
+#include "colors.hpp"
 #include "simple_render_system.hpp"
 
 #define GLM_FORCE_RADIANS            // No matter what system i'm in, angles are in radians, not degrees
@@ -12,10 +13,6 @@
 #include <vector>
 
 namespace pve {
-
-static glm::vec3 red = {1.0f, 0.0f, 0.0f};
-static glm::vec3 green = {0.0f, 1.0f, 0.0f};
-static glm::vec3 blue = {0.0f, 0.0f, 1.0f};
 
 FirstApp::FirstApp() { loadGameObjects(); }
 
@@ -46,52 +43,52 @@ std::unique_ptr<PveModel> createCubeModel(PveDevice& device, glm::vec3 offset) {
     std::vector<PveModel::Vertex> vertices{
 
         // left face (white)
-        {{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
-        {{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
-        {{-.5f, -.5f, .5f}, {.9f, .9f, .9f}},
-        {{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
-        {{-.5f, .5f, -.5f}, {.9f, .9f, .9f}},
-        {{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
+        {{-.5f, -.5f, -.5f}, colors::white},
+        {{-.5f, .5f, .5f}, colors::white},
+        {{-.5f, -.5f, .5f}, colors::white},
+        {{-.5f, -.5f, -.5f}, colors::white},
+        {{-.5f, .5f, -.5f}, colors::white},
+        {{-.5f, .5f, .5f}, colors::white},
 
         // right face (yellow)
-        {{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
-        {{.5f, .5f, .5f}, {.8f, .8f, .1f}},
-        {{.5f, -.5f, .5f}, {.8f, .8f, .1f}},
-        {{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
-        {{.5f, .5f, -.5f}, {.8f, .8f, .1f}},
-        {{.5f, .5f, .5f}, {.8f, .8f, .1f}},
+        {{.5f, -.5f, -.5f}, colors::yellow},
+        {{.5f, .5f, .5f}, colors::yellow},
+        {{.5f, -.5f, .5f}, colors::yellow},
+        {{.5f, -.5f, -.5f}, colors::yellow},
+        {{.5f, .5f, -.5f}, colors::yellow},
+        {{.5f, .5f, .5f}, colors::yellow},
 
         // top face (orange, remember y axis points down)
-        {{-.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
-        {{.5f, -.5f, .5f}, {.9f, .6f, .1f}},
-        {{-.5f, -.5f, .5f}, {.9f, .6f, .1f}},
-        {{-.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
-        {{.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
-        {{.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+        {{-.5f, -.5f, -.5f}, colors::orange},
+        {{.5f, -.5f, .5f}, colors::orange},
+        {{-.5f, -.5f, .5f}, colors::orange},
+        {{-.5f, -.5f, -.5f}, colors::orange},
+        {{.5f, -.5f, -.5f}, colors::orange},
+        {{.5f, -.5f, .5f}, colors::orange},
 
         // bottom face (red)
-        {{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
-        {{.5f, .5f, .5f}, {.8f, .1f, .1f}},
-        {{-.5f, .5f, .5f}, {.8f, .1f, .1f}},
-        {{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
-        {{.5f, .5f, -.5f}, {.8f, .1f, .1f}},
-        {{.5f, .5f, .5f}, {.8f, .1f, .1f}},
+        {{-.5f, .5f, -.5f}, colors::red},
+        {{.5f, .5f, .5f}, colors::red},
+        {{-.5f, .5f, .5f}, colors::red},
+        {{-.5f, .5f, -.5f}, colors::red},
+        {{.5f, .5f, -.5f}, colors::red},
+        {{.5f, .5f, .5f}, colors::red},
 
         // nose face (blue)
-        {{-.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
-        {{.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
-        {{-.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
-        {{-.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
-        {{.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
-        {{.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
+        {{-.5f, -.5f, 0.5f}, colors::blue},
+        {{.5f, .5f, 0.5f}, colors::blue},
+        {{-.5f, .5f, 0.5f}, colors::blue},
+        {{-.5f, -.5f, 0.5f}, colors::blue},
+        {{.5f, -.5f, 0.5f}, colors::blue},
+        {{.5f, .5f, 0.5f}, colors::blue},
 
         // tail face (green)
-        {{-.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
-        {{.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
-        {{-.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
-        {{-.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
-        {{.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
-        {{.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
+        {{-.5f, -.5f, -0.5f}, colors::green},
+        {{.5f, .5f, -0.5f}, colors::green},
+        {{-.5f, .5f, -0.5f}, colors::green},
+        {{-.5f, -.5f, -0.5f}, colors::green},
+        {{.5f, -.5f, -0.5f}, colors::green},
+        {{.5f, .5f, -0.5f}, colors::green},
 
     };
     for (auto& v : vertices) {
