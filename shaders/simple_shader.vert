@@ -8,14 +8,13 @@
 // "in" signifies this variable takes its value from a vertex buffer
 // "layout(location)" sets the storage of where this variable value will come from
 // this is how we connect the attribute description to the variable we mean to reference in the shader
-layout(location = 0) in vec2 position;
+layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 color;
 
-//layout(location = 0) out vec3 fragColor;
+layout(location = 0) out vec3 fragColor;
 
 layout(push_constant) uniform Push {
-    mat2 transform;
-    vec2 offset;
+    mat4 transform;
     vec3 color;
 } push;
 
@@ -32,7 +31,7 @@ void main() {
 // gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
 
 // the position attribute will automatically be set with the value from the vertex buffer
-    gl_Position = vec4(push.transform * position + push.offset, 0.0, 1.0);
-
-    //fragColor = color;
+    //gl_Position = vec4(push.transform * position + push.offset, 0.0, 1.0);
+    gl_Position = vec4(push.transform * vec4(position, 1.0));
+    fragColor = color;
 }

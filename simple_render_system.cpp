@@ -1,6 +1,6 @@
 #include "simple_render_system.hpp"
 
-#define GLM_FORCE_RADIANS  // No matter what system i'm in, angles are in radians, not degrees
+#define GLM_FORCE_RADIANS            // No matter what system i'm in, angles are in radians, not degrees
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE  // Forces GLM to expect depth buffer values to range from 0 to 1 instead of -1 to 1 (the opengl standard)
 #include <array>
 #include <cassert>
@@ -12,8 +12,7 @@ namespace pve {
 
 // temporary
 struct SimplePushConstantData {
-    glm::mat2 transform{1.f};  // initialized as an identity matrix
-    glm::vec2 offset;
+    glm::mat4 transform{1.f};     // initialized as an identity matrix
     alignas(16) glm::vec3 color;  // alignas: tutorial 9 at 09:00
 };
 
@@ -70,20 +69,15 @@ void SimpleRenderSystem::createPipeline(VkRenderPass renderPass) {
 
 void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer,
                                            std::vector<PveGameObject> &gameObjects) {
-    // update
-    int i = 0;
-    for (auto &obj : gameObjects) {
-        i += 1;
-        obj.transform2d.rotation = glm::mod<float>(obj.transform2d.rotation + 0.001f * i,
-                                                   2.f * glm::pi<float>());
-    }
-    // render
     pvePipeline->bind(commandBuffer);
     for (auto &obj : gameObjects) {
+        obj.transform.rotation.y = glm::mod(obj.transform.rotation.y + 0.001f,
+                                            glm::two_pi<float>());
+        obj.transform.rotation.x = glm::mod(obj.transform.rotation.x + 0.005f,
+                                            glm::two_pi<float>());
         SimplePushConstantData push{};
-        push.offset = obj.transform2d.translation;
         push.color = obj.color;
-        push.transform = obj.transform2d.mat2();
+        push.transform = obj.transform.mat4();
         vkCmdPushConstants(commandBuffer, pipelineLayout,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                            sizeof(SimplePushConstantData), &push);
