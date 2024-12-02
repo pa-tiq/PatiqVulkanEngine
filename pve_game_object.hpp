@@ -1,22 +1,23 @@
 #pragma once
 
 #include <memory>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "pve_model.hpp"
 
 namespace pve {
-struct Transform2dComponent {
-    glm::vec2 translation{};  // move objects up, down, left, right
-    glm::vec2 scale{1.f, 1.f};
-    float rotation;
+struct TransformComponent {
+    glm::vec3 translation{};  // move objects up, down, left, right
+    glm::vec3 scale{1.f, 1.f, 1.f};
+    glm::vec3 rotation{};
 
-    glm::mat2 mat2() {
-        const float s = glm::sin(rotation);
-        const float c = glm::cos(rotation);
-        glm::mat2 rotMatrix{{c, s}, {-s, c}};
-        glm::mat2 scaleMat({scale.x, .0f},
-                           {.0f, scale.y});  // scale matrix - each {} is a column
-        return rotMatrix * scaleMat;
+    glm::mat4 mat4() {
+        auto transform = glm::translate(glm::mat4{1.f}, translation);
+        transform = glm::rotate(transform, rotation.y, {0.f,1.f,0.f});
+        transform = glm::rotate(transform, rotation.x, {1.f,0.f,0.f});
+        transform = glm::rotate(transform, rotation.z, {0.f,0.f,1.f});
+        transform = glm::scale(transform, scale);
+        return transform;
     }
 };
 
@@ -78,8 +79,7 @@ class PveGameObject {
 
     std::shared_ptr<PveModel> model{};
     glm::vec3 color{};
-    Transform2dComponent transform2d{};
-    RigidBody2dComponent rigidBody2d{};
+    TransformComponent transform{};
 
    private:
     PveGameObject(id_t objId) : id{objId} {}

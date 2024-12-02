@@ -8,7 +8,7 @@ int main() {
     pve::FirstApp app{};
 
     try {
-        app.runGravityPhysics();
+        app.run();
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return EXIT_FAILURE;
