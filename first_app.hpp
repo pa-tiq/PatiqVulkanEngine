@@ -21,7 +21,7 @@ class FirstApp {
     FirstApp &operator=(const FirstApp &) = delete;
 
     void run();
-    void runGravityPhisics();
+    void runGravityPhysics();
 
    private:
     void sierpinski(std::vector<PveModel::Vertex> &vertices, int depth, glm::vec2 left,

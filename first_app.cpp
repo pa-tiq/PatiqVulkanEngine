@@ -41,7 +41,7 @@ void FirstApp::run() {
     vkDeviceWaitIdle(pveDevice.device());
 }
 
-void FirstApp::runGravityPhisics() {
+void FirstApp::runGravityPhysics() {
     // create some models
     std::shared_ptr<PveModel> squareModel = createSquareModel(
         pveDevice,
