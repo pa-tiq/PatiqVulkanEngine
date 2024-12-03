@@ -1,19 +1,26 @@
 #include "first_app.hpp"
 
 #include "colors.hpp"
+#include "keyboard_movement_controller.hpp"
 #include "pve_camera.hpp"
 #include "simple_render_system.hpp"
 
+// libs
 #define GLM_FORCE_RADIANS            // No matter what system i'm in, angles are in radians, not degrees
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE  // Forces GLM to expect depth buffer values to range from 0 to 1 instead of -1 to 1 (the opengl standard)
-#include <array>
-#include <cassert>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
+
+// std
+#include <array>
+#include <cassert>
+#include <chrono>
 #include <stdexcept>
 #include <vector>
 
 namespace pve {
+
+float MAX_FRAME_TIME = 1.0f;
 
 FirstApp::FirstApp() { loadGameObjects(); }
 
@@ -23,11 +30,27 @@ void FirstApp::run() {
     SimpleRenderSystem simpleRenderSystem{pveDevice,
                                           pveRenderer.getSwapChainRenderPass()};
     PveCamera camera{};
+    camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));  // camera looks to the center of the cube
     // while the window doesn't want to close, poll window events
+
+    // viewerObject has no model and won't be rendered. It's used to store the camera's current state.
+    auto viewerObject = PveGameObject::createGameObject();
+    KeyboardMovementController cameraController{};
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+
     while (!pveWindow.shouldClose()) {
         glfwPollEvents();
+
+        auto newTime = std::chrono::high_resolution_clock::now();
+        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+        currentTime = newTime;
+        frameTime = glm::min(frameTime, MAX_FRAME_TIME);
+
+        cameraController.moveInPlaneXZ(pveWindow.getGLFWWindow(), frameTime, viewerObject);
+        camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
+
         float aspect = pveRenderer.getAspectRatio();
-        // camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
         camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 10.f);
 
         // the beginFrame function returns a nullptr if the swap chains needs to be recreated
