@@ -10,10 +10,9 @@
 
 namespace pve {
 
-// temporary
 struct SimplePushConstantData {
-    glm::mat4 transform{1.f};     // initialized as an identity matrix
-    alignas(16) glm::vec3 color;  // alignas: tutorial 9 at 09:00
+    glm::mat4 transform{1.f};    // initialized as an identity matrix
+    glm::mat4 modelMatrix{1.f};  // initialized as an identity matrix
 };
 
 static glm::vec3 red = {1.0f, 0.0f, 0.0f};
@@ -78,8 +77,9 @@ void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer,
         // obj.transform.rotation.x = glm::mod(obj.transform.rotation.x + 0.005f,
         //                                     glm::two_pi<float>());
         SimplePushConstantData push{};
-        push.color = obj.color;
-        push.transform = projectionView * obj.transform.mat4();
+        auto modelMatrix = obj.transform.mat4();
+        push.transform = projectionView * modelMatrix;
+        push.modelMatrix = modelMatrix;
 
         vkCmdPushConstants(commandBuffer, pipelineLayout,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
