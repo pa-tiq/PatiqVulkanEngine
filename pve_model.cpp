@@ -1,7 +1,13 @@
 #include "pve_model.hpp"
 
+// libs
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
+// std
 #include <cassert>
 #include <cstring>
+#include <iostream>
 
 namespace pve {
 PveModel::PveModel(PveDevice &device, const PveModel::Builder &builder)
@@ -17,6 +23,13 @@ PveModel::~PveModel() {
         vkDestroyBuffer(pveDevice.device(), indexBuffer, nullptr);
         vkFreeMemory(pveDevice.device(), indexBufferMemory, nullptr);
     }
+}
+
+std::unique_ptr<PveModel> PveModel::createModelFromFile(PveDevice &device, const std::string &filepath) {
+    Builder builder{};
+    builder.loadModel(filepath);
+    std::cout << "Vertex count: " << builder.vertices.size() << "\n";
+    return std::make_unique<PveModel>(device, builder);
 }
 
 void PveModel::createVertexBuffers(const std::vector<Vertex> &vertices) {
@@ -136,6 +149,61 @@ PveModel::Vertex::getAttributeDescriptions() {
     attributeDescriptions[1].offset = offsetof(Vertex, color);
 
     return attributeDescriptions;
+}
+
+void PveModel::Builder::loadModel(const std::string &filepath) {
+    tinyobj::attrib_t attrib;              // position, color, normal, texture coordinate data
+    std::vector<tinyobj::shape_t> shapes;  // index values for each face element
+    std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str())) {
+        throw std::runtime_error(warn + err);
+    }
+
+    vertices.clear();
+    indices.clear();
+
+    for (const auto &shape : shapes) {
+        for (const auto &index : shape.mesh.indices) {
+            Vertex vertex{};
+            if (index.vertex_index >= 0) {
+                vertex.position = {
+                    attrib.vertices[3 * index.vertex_index + 0],  // X
+                    attrib.vertices[3 * index.vertex_index + 1],  // Y
+                    attrib.vertices[3 * index.vertex_index + 2],  // Z
+                };
+
+                auto colorIndex = 3 * index.vertex_index + 2;
+                if (colorIndex < attrib.colors.size()) {
+                    vertex.color = {
+                        attrib.colors[colorIndex - 2],  // R
+                        attrib.colors[colorIndex - 1],  // G
+                        attrib.colors[colorIndex - 0],  // B
+                    };
+                } else {
+                    vertex.color = {1.f, 1.f, 1.f};  // default color
+                }
+            }
+
+            if (index.normal_index >= 0) {
+                vertex.normal = {
+                    attrib.normals[3 * index.normal_index + 0],  // X
+                    attrib.normals[3 * index.normal_index + 1],  // Y
+                    attrib.normals[3 * index.normal_index + 2],  // Z
+                };
+            }
+
+            if (index.texcoord_index >= 0) {
+                vertex.uv = {
+                    attrib.texcoords[2 * index.texcoord_index + 0],  // X
+                    attrib.texcoords[2 * index.texcoord_index + 1],  // Y
+                };
+            }
+
+            vertices.push_back(vertex);
+        }
+    }
 }
 
 }  // namespace pve

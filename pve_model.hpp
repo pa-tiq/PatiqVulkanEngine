@@ -2,9 +2,13 @@
 
 #include "pve_device.hpp"
 
+// libs
 #define GLM_FORCE_RADIANS            // No matter what system i'm in, angles are in radians, not degrees
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE  // Forces GLM to expect depth buffer values to range from 0 to 1 instead of -1 to 1 (the opengl standard)
 #include <glm/glm.hpp>
+
+// std
+#include <memory>
 #include <vector>
 
 namespace pve {
@@ -13,8 +17,10 @@ namespace pve {
 class PveModel {
    public:
     struct Vertex {
-        glm::vec3 position;
-        glm::vec3 color;
+        glm::vec3 position{};
+        glm::vec3 color{};
+        glm::vec3 normal{};
+        glm::vec2 uv{};
 
         static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
         static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
@@ -23,6 +29,8 @@ class PveModel {
     struct Builder {
         std::vector<Vertex> vertices{};
         std::vector<uint32_t> indices{};
+
+        void loadModel(const std::string &filepath);
     };
 
     PveModel(PveDevice &device, const PveModel::Builder &builder);
@@ -30,6 +38,8 @@ class PveModel {
 
     PveModel(const PveModel &) = delete;
     PveModel &operator=(const PveModel &) = delete;
+
+    static std::unique_ptr<PveModel> createModelFromFile(PveDevice &device, const std::string &filepath);
 
     void bind(VkCommandBuffer commandBuffer);
     void draw(VkCommandBuffer commandBuffer);

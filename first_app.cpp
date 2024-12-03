@@ -116,12 +116,14 @@ std::unique_ptr<PveModel> createCubeModel(PveDevice& device, glm::vec3 offset) {
 }
 
 void FirstApp::loadGameObjects() {
-    std::shared_ptr<PveModel> pveModel = createCubeModel(pveDevice, {.0f, .0f, .0f});
-    auto cube = PveGameObject::createGameObject();
-    cube.model = pveModel;
-    cube.transform.translation = {.0f, .0f, 2.5f};
-    cube.transform.scale = {.5f, .5f, .5f};
-    gameObjects.push_back(std::move(cube));
+    // std::shared_ptr<PveModel> pveModel = createCubeModel(pveDevice, {.0f, .0f, .0f});
+    // std::shared_ptr<PveModel> pveModel = PveModel::createModelFromFile(pveDevice, "models/colored_cube.obj");
+    std::shared_ptr<PveModel> pveModel = PveModel::createModelFromFile(pveDevice, "models/smooth_vase.obj");
+    auto gameObject = PveGameObject::createGameObject();
+    gameObject.model = pveModel;
+    gameObject.transform.translation = {.0f, .0f, 2.5f};
+    gameObject.transform.scale = {3.f, 3.f, 3.f};
+    gameObjects.push_back(std::move(gameObject));
 }
 
 }  // namespace pve
