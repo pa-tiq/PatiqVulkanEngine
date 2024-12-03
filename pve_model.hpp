@@ -5,7 +5,6 @@
 #define GLM_FORCE_RADIANS            // No matter what system i'm in, angles are in radians, not degrees
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE  // Forces GLM to expect depth buffer values to range from 0 to 1 instead of -1 to 1 (the opengl standard)
 #include <glm/glm.hpp>
-
 #include <vector>
 
 namespace pve {
@@ -21,7 +20,12 @@ class PveModel {
         static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
     };
 
-    PveModel(PveDevice &device, const std::vector<Vertex> &vertices);
+    struct Builder {
+        std::vector<Vertex> vertices{};
+        std::vector<uint32_t> indices{};
+    };
+
+    PveModel(PveDevice &device, const PveModel::Builder &builder);
     ~PveModel();
 
     PveModel(const PveModel &) = delete;
@@ -34,10 +38,18 @@ class PveModel {
     // memory is not automatically assigned to the buffer
     // the programmer controls memory management
    private:
-    void createVertexBuffer(const std::vector<Vertex> &vertices);
+    void createVertexBuffers(const std::vector<Vertex> &vertices);
+    void createIndexBuffers(const std::vector<uint32_t> &indices);
+
     PveDevice &pveDevice;
+
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
     uint32_t vertexCount;
+
+    bool hasIndexBuffer = false;
+    VkBuffer indexBuffer;
+    VkDeviceMemory indexBufferMemory;
+    uint32_t indexCount;
 };
 }  // namespace pve
