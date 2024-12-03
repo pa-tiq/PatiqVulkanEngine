@@ -1,13 +1,28 @@
 #include "pve_model.hpp"
 
+#include "pve_utils.hpp"
+
 // libs
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 // std
 #include <cassert>
 #include <cstring>
-#include <iostream>
+#include <unordered_map>
+
+namespace std {
+template <>
+struct hash<pve::PveModel::Vertex> {
+    size_t operator()(pve::PveModel::Vertex const &vertex) const {
+        size_t seed = 0;
+        pve::hashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uv);
+        return seed;
+    }
+};
+}  // namespace std
 
 namespace pve {
 PveModel::PveModel(PveDevice &device, const PveModel::Builder &builder)
@@ -28,7 +43,6 @@ PveModel::~PveModel() {
 std::unique_ptr<PveModel> PveModel::createModelFromFile(PveDevice &device, const std::string &filepath) {
     Builder builder{};
     builder.loadModel(filepath);
-    std::cout << "Vertex count: " << builder.vertices.size() << "\n";
     return std::make_unique<PveModel>(device, builder);
 }
 
@@ -164,6 +178,7 @@ void PveModel::Builder::loadModel(const std::string &filepath) {
     vertices.clear();
     indices.clear();
 
+    std::unordered_map<Vertex, uint32_t> uniqueVertices{};
     for (const auto &shape : shapes) {
         for (const auto &index : shape.mesh.indices) {
             Vertex vertex{};
@@ -200,8 +215,11 @@ void PveModel::Builder::loadModel(const std::string &filepath) {
                     attrib.texcoords[2 * index.texcoord_index + 1],  // Y
                 };
             }
-
-            vertices.push_back(vertex);
+            if (uniqueVertices.count(vertex) == 0) {
+                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                vertices.push_back(vertex);
+            }
+            indices.push_back(uniqueVertices[vertex]);
         }
     }
 }
