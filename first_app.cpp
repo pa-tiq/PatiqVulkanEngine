@@ -120,11 +120,18 @@ void FirstApp::loadGameObjects() {
     // std::shared_ptr<PveModel> pveModel = PveModel::createModelFromFile(pveDevice, "models/colored_cube.obj");
     // std::shared_ptr<PveModel> pveModel = PveModel::createModelFromFile(pveDevice, "models/smooth_vase.obj");
     std::shared_ptr<PveModel> pveModel = PveModel::createModelFromFile(pveDevice, "models/flat_vase.obj");
-    auto gameObject = PveGameObject::createGameObject();
-    gameObject.model = pveModel;
-    gameObject.transform.translation = {.0f, .5f, 2.5f};
-    gameObject.transform.scale = {3.f, 3.f, 3.f};
-    gameObjects.push_back(std::move(gameObject));
+    auto flatVase = PveGameObject::createGameObject();
+    flatVase.model = pveModel;
+    flatVase.transform.translation = {.0f, .5f, 2.5f};
+    flatVase.transform.scale = {3.f, 3.f, 3.f};
+    gameObjects.push_back(std::move(flatVase));
+
+    pveModel = PveModel::createModelFromFile(pveDevice, "models/smooth_vase.obj");
+    auto smoothVase = PveGameObject::createGameObject();
+    smoothVase.model = pveModel;
+    smoothVase.transform.translation = {.9f, .5f, 2.5f};
+    smoothVase.transform.scale = {3.f, 3.f, 3.f};
+    gameObjects.push_back(std::move(smoothVase));
 }
 
 }  // namespace pve

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pve_buffer.hpp"
 #include "pve_device.hpp"
 
 // libs
@@ -57,13 +58,11 @@ class PveModel {
 
     PveDevice &pveDevice;
 
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
+    std::unique_ptr<PveBuffer> vertexBuffer;
     uint32_t vertexCount;
 
     bool hasIndexBuffer = false;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
+    std::unique_ptr<PveBuffer> indexBuffer;
     uint32_t indexCount;
 };
 }  // namespace pve

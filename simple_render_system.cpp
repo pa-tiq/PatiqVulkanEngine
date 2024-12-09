@@ -11,8 +11,8 @@
 namespace pve {
 
 struct SimplePushConstantData {
-    glm::mat4 transform{1.f};    // initialized as an identity matrix
-    glm::mat4 modelMatrix{1.f};  // initialized as an identity matrix
+    glm::mat4 transform{1.f};     // initialized as an identity matrix
+    glm::mat4 normalMatrix{1.f};  // initialized as an identity matrix
 };
 
 static glm::vec3 red = {1.0f, 0.0f, 0.0f};
@@ -79,7 +79,7 @@ void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer,
         SimplePushConstantData push{};
         auto modelMatrix = obj.transform.mat4();
         push.transform = projectionView * modelMatrix;
-        push.modelMatrix = modelMatrix;
+        push.normalMatrix = obj.transform.normalMatrix();
 
         vkCmdPushConstants(commandBuffer, pipelineLayout,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
