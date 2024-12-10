@@ -2,6 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <memory>
+#include <string>
 #include <unordered_map>
 
 #include "pve_model.hpp"
@@ -79,10 +80,10 @@ class PveGameObject {
     std::shared_ptr<PveModel> model{};
     glm::vec3 color{};
     TransformComponent transform{};
+    std::string name;
 
    private:
     PveGameObject(id_t objId) : id{objId} {}
-
     id_t id;
 };
 }  // namespace pve

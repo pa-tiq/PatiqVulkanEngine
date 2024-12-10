@@ -1,6 +1,6 @@
 #include "first_app.hpp"
 
-#include "colors.hpp"
+#include "constants/colors.hpp"
 #include "keyboard_movement_controller.hpp"
 #include "point_light_system.hpp"
 #include "pve_buffer.hpp"
@@ -129,59 +129,11 @@ void FirstApp::run() {
     vkDeviceWaitIdle(pveDevice.device());
 }
 
-// temporary helper function, creates a 1x1x1 cube centered at offset
-std::unique_ptr<PveModel> createCubeModel(PveDevice& device, glm::vec3 offset) {
-    PveModel::Builder modelBuilder{};
-
-    modelBuilder.vertices = {
-        // left face (white)
-        {{-.5f, -.5f, -.5f}, colors::white},
-        {{-.5f, .5f, .5f}, colors::white},
-        {{-.5f, -.5f, .5f}, colors::white},
-        {{-.5f, .5f, -.5f}, colors::white},
-
-        // right face (yellow)
-        {{.5f, -.5f, -.5f}, colors::yellow},
-        {{.5f, .5f, .5f}, colors::yellow},
-        {{.5f, -.5f, .5f}, colors::yellow},
-        {{.5f, .5f, -.5f}, colors::yellow},
-
-        // top face (orange, remember y axis points down)
-        {{-.5f, -.5f, -.5f}, colors::orange},
-        {{.5f, -.5f, .5f}, colors::orange},
-        {{-.5f, -.5f, .5f}, colors::orange},
-        {{.5f, -.5f, -.5f}, colors::orange},
-
-        // bottom face (red)
-        {{-.5f, .5f, -.5f}, colors::red},
-        {{.5f, .5f, .5f}, colors::red},
-        {{-.5f, .5f, .5f}, colors::red},
-        {{.5f, .5f, -.5f}, colors::red},
-
-        // nose face (blue)
-        {{-.5f, -.5f, .5f}, colors::blue},
-        {{.5f, .5f, .5f}, colors::blue},
-        {{-.5f, .5f, .5f}, colors::blue},
-        {{.5f, -.5f, .5f}, colors::blue},
-
-        // tail face (green)
-        {{-.5f, -.5f, -.5f}, colors::green},
-        {{.5f, .5f, -.5f}, colors::green},
-        {{-.5f, .5f, -.5f}, colors::green},
-        {{.5f, -.5f, -.5f}, colors::green},
-    };
-    for (auto& v : modelBuilder.vertices) {
-        v.position += offset;
-    }
-    modelBuilder.indices = {0, 1, 2, 0, 3, 1, 4, 5, 6, 4, 7, 5, 8, 9, 10, 8, 11, 9,
-                            12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 19, 17, 20, 21, 22, 20, 23, 21};
-    return std::make_unique<PveModel>(device, modelBuilder);
-}
-
 void FirstApp::loadGameObjects() {
     std::shared_ptr<PveModel> pveModel = PveModel::createModelFromFile(pveDevice, "models/cube.obj");
     auto cube = PveGameObject::createGameObject();
     cube.model = pveModel;
+    cube.name = "cube";
     cube.transform.translation = {-2.0f, -0.2f, 0.f};
     cube.transform.scale = {.3f, .3f, .3f};
     gameObjects.emplace(cube.getId(), std::move(cube));
@@ -189,6 +141,7 @@ void FirstApp::loadGameObjects() {
     pveModel = PveModel::createModelFromFile(pveDevice, "models/flat_vase.obj");
     auto flatVase = PveGameObject::createGameObject();
     flatVase.model = pveModel;
+    flatVase.name = "flatVase";
     flatVase.transform.translation = {.0f, .5f, 0.f};
     flatVase.transform.scale = {3.f, 3.f, 3.f};
     gameObjects.emplace(flatVase.getId(), std::move(flatVase));
@@ -196,6 +149,7 @@ void FirstApp::loadGameObjects() {
     pveModel = PveModel::createModelFromFile(pveDevice, "models/smooth_vase.obj");
     auto smoothVase = PveGameObject::createGameObject();
     smoothVase.model = pveModel;
+    smoothVase.name = "smoothVase";
     smoothVase.transform.translation = {.9f, .5f, 0.f};
     smoothVase.transform.scale = {3.f, 3.f, 3.f};
     gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));

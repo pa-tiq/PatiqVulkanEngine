@@ -79,10 +79,13 @@ void SimpleRenderSystem::renderGameObjects(FrameInfo &frameInfo) {
     for (auto &keyvalue : frameInfo.gameObjects) {
         auto &obj = keyvalue.second;
         if (obj.model == nullptr) continue;
-        // obj.transform.rotation.y = glm::mod(obj.transform.rotation.y + 0.001f,
-        //                                     glm::two_pi<float>());
-        // obj.transform.rotation.x = glm::mod(obj.transform.rotation.x + 0.005f,
-        //                                     glm::two_pi<float>());
+        if (obj.name == "cube") {
+            obj.transform.rotation.y = glm::mod(obj.transform.rotation.y + 0.001f,
+                                                glm::two_pi<float>());
+            obj.transform.rotation.x = glm::mod(obj.transform.rotation.x + 0.005f,
+                                                glm::two_pi<float>());
+        }
+
         SimplePushConstantData push{};
         push.modelMatrix = obj.transform.mat4();
         push.normalMatrix = obj.transform.normalMatrix();
