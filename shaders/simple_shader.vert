@@ -14,14 +14,21 @@ layout(location = 2) in vec3 normal;
 layout(location = 3) in vec2 uv;
 
 layout(location = 0) out vec3 fragColor;
+layout(location = 1) out vec3 fragPosWorld;
+layout(location = 2) out vec3 fragNormalWorld;
+
+layout(set = 0, binding = 0) uniform GlobalUbo{
+    mat4 projection;
+    mat4 view;
+    vec4 ambientLightColor;
+    vec3 lightPosition;
+    vec4 lightColor;
+} ubo;
 
 layout(push_constant) uniform Push {
-    mat4 transform; // projection * view * model
+    mat4 modelMatrix;
     mat4 normalMatrix;
 } push;
-
-const vec3 DIRECTION_TO_LIGHT = normalize(vec3(1.0,-3.0,-1.0));
-const float AMBIENT = 0.02;
 
 void main() {
 // the gl_Position is a 4-dimensional vector that maps to the output frame buffer image.
@@ -35,11 +42,10 @@ void main() {
 // the 4th parameter is what the vector will be divided by.
 // gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
 
-// the position attribute will automatically be set with the value from the vertex buffer
-    //gl_Position = vec4(push.transform * position + push.offset, 0.0, 1.0);
-    gl_Position = push.transform * vec4(position, 1.0);
+    vec4 positionWorld = push.modelMatrix * vec4(position, 1.0);
+    gl_Position = ubo.projection * (ubo.view * positionWorld);
 
-    vec3 normalWorldSpace = normalize(mat3(push.normalMatrix) * normal);
-    float lightIntensity = AMBIENT + max(dot(normalWorldSpace, DIRECTION_TO_LIGHT), 0);
-    fragColor = lightIntensity * color;
+    fragNormalWorld = normalize(mat3(push.normalMatrix) * normal);
+    fragPosWorld = positionWorld.xyz;
+    fragColor = color;
 }

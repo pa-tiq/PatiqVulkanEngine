@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "pve_descriptors.hpp"
 #include "pve_device.hpp"
 #include "pve_game_object.hpp"
 #include "pve_renderer.hpp"
@@ -41,6 +42,7 @@ class FirstApp {
     PveDevice pveDevice{pveWindow};
     PveRenderer pveRenderer{pveWindow, pveDevice};
 
-    std::vector<PveGameObject> gameObjects;
+    std::unique_ptr<PveDescriptorPool> globalPool{};
+    PveGameObject::Map gameObjects;
 };
 }  // namespace pve

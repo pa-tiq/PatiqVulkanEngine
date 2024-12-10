@@ -11,16 +11,16 @@
 #include "pve_pipeline.hpp"
 
 namespace pve {
-class SimpleRenderSystem {
+class PointLightSystem {
    public:
-    SimpleRenderSystem(PveDevice &device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
-    ~SimpleRenderSystem();
+    PointLightSystem(PveDevice &device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+    ~PointLightSystem();
 
-    SimpleRenderSystem(const SimpleRenderSystem &) = delete;
-    SimpleRenderSystem &operator=(const SimpleRenderSystem &) = delete;
+    PointLightSystem(const PointLightSystem &) = delete;
+    PointLightSystem &operator=(const PointLightSystem &) = delete;
 
     // Renderer: swapchain, command buffers and draw frame
-    void renderGameObjects(FrameInfo &frameInfo);
+    void render(FrameInfo &frameInfo);
 
    private:
     void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
