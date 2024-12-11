@@ -9,7 +9,9 @@ sudo apt install vulkan-tools libvulkan-dev vulkan-validationlayers vulkan-utili
 whereis glslc
 ```
 
-This project uses [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader/blob/release/tiny_obj_loader.h) for loading .obj files. The header file is already inside the folder with the same name.
+This project uses [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader/blob/release/tiny_obj_loader.h) for loading `.obj` files. The header file is already inside the `tinyobjloader/` folder.
+
+You'll also need to create a `models/` folder and put `.obj` files there. [Here](https://drive.google.com/drive/folders/1Rr7UiVsbbmYocNqhYAruHGQ25Da_Jd4Z?usp=drive_link) are my files.
 
 Your .env file should have the path for GLSLC and tinyobjloader:
 
@@ -18,7 +20,7 @@ GLSLC_PATH = /usr/bin/glslc
 TINYOBJLOADER_PATH = tinyobjloader
 ```
 
-Compile the shaders to obtain the .spv files, make and run the app with:
+To compile the shaders to obtain the .spv files and make and run the app use the following command:
 
 ```bash
 make test
