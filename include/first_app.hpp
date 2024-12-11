@@ -3,11 +3,11 @@
 #include <memory>
 #include <vector>
 
-#include "pve_descriptors.hpp"
-#include "pve_device.hpp"
-#include "pve_game_object.hpp"
-#include "pve_renderer.hpp"
-#include "pve_window.hpp"
+#include "pve/pve_descriptors.hpp"
+#include "pve/pve_device.hpp"
+#include "pve/pve_game_object.hpp"
+#include "pve/pve_renderer.hpp"
+#include "pve/pve_window.hpp"
 
 namespace pve {
 class FirstApp {

@@ -5,7 +5,7 @@
  * https://github.com/SaschaWillems/Vulkan/blob/master/base/VulkanBuffer.h
  */
 
-#include "pve_buffer.hpp"
+#include "pve/pve_buffer.hpp"
 
 // std
 #include <cassert>

@@ -3,7 +3,7 @@ include .env
 # specify compiler options
 # -std=c++17: Use the C++17 standard.
 # -O2: Optimize for speed without excessive compile time.
-CFLAGS = -std=c++17 -O2 -I${TINYOBJLOADER_PATH}
+CFLAGS = -std=c++17 -O2 -I${TINYOBJLOADER_PATH} -Iinclude
 
 # LDFLAGS: Specifies linker options.
 # -lglfw: Links the GLFW library (for windowing and OpenGL/Vulkan integration).
@@ -11,53 +11,41 @@ CFLAGS = -std=c++17 -O2 -I${TINYOBJLOADER_PATH}
 # -ldl, -lpthread, etc. link additional required system libraries for threading, dynamic loading, and X11 support.
 LDFLAGS = -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
 
-# find ./shaders -type f -name "*.vert": Finds all .vert (vertex shader) files in the shaders directory.
-vertSources = $(shell find ./shaders -type f -name "*.vert")
+# Find all source files
+SRCS := $(shell find src -name '*.cpp')
+OBJS := $(SRCS:.cpp=.o)
 
-# find ./shaders -type f -name "*.frag": Finds all .frag (fragment shader) files in the shaders directory.
-fragSources = $(shell find ./shaders -type f -name "*.frag")
+# Find shader files
+VERT_SHADERS := $(shell find shaders -type f -name "*.vert")
+FRAG_SHADERS := $(shell find shaders -type f -name "*.frag")
+SHADER_BINS := $(patsubst shaders/%.vert,shaders/compiled/%.vert.spv,$(VERT_SHADERS)) \
+               $(patsubst shaders/%.frag,shaders/compiled/%.frag.spv,$(FRAG_SHADERS))
 
-# $(patsubst pattern, replacement, text): finds whitespace-separated words in text that match pattern and replaces them with replacement.
-# Converts source shader file names (e.g., shader.vert) into output object file names (shader.vert.spv), which are compiled SPIR-V binaries.
-# Then, create list of all spv files and set as dependency
-vertObjFiles = $(patsubst %.vert, %.vert.spv, $(vertSources))
-fragObjFiles = $(patsubst %.frag, %.frag.spv, $(fragSources))
+TARGET = build/first_app.out
 
-# name of the final executable
-TARGET = first_app.out
+# Create build directory
+$(shell mkdir -p build)
+$(shell mkdir -p shaders/compiled)
 
-# Dependencies:
-# $(vertObjFiles) and $(fragObjFiles): Compiled shader SPIR-V files
-# *.cpp *.hpp: All C++ source and header files in the current directory.
-# Recipe:
-# g++ $(CFLAGS) -o $(TARGET) *.cpp $(LDFLAGS): Compiles all .cpp files and links them with the specified libraries to produce the executable.
-$(TARGET): $(vertObjFiles) $(fragObjFiles)
-$(TARGET): *.cpp *.hpp
-	g++ $(CFLAGS) -o $(TARGET) *.cpp $(LDFLAGS)
+# Main target
+$(TARGET): $(SHADER_BINS) $(OBJS)
+	g++ $(OBJS) -o $(TARGET) $(LDFLAGS)
 
-# make shader targets
-# This is a pattern rule for compiling shaders:
-# %: Matches prerequisites with the same base name (e.g., shader.vert → shader.vert.spv).
-# %.spv: Matches targets ending in .spv.
-# Recipe:
-# $(GLSLC_PATH): Calls the GLSL compiler specified in the .env file.
-# $< is the first prerequisite (usually a source file, like shader.vert)
-# $@ is the name of the target being generated (like shader.vert.spv)
-# each spv file depends on itself without the spv extension
-%.spv: %
+# Compile source files
+%.o: %.cpp
+	g++ $(CFLAGS) -c $< -o $@
+
+# Compile shaders
+shaders/compiled/%.spv: shaders/%
 	${GLSLC_PATH} $< -o $@
 
-# Phony Targets
-# Declares test and clean as phony targets, meaning they are not actual files and should always execute
-.PHONY: test clean
 
-# Test Target
-# Ensures first_app.out is built and then runs it
-test: first_app.out
-	./first_app.out
+.PHONY: clean test
 
-# Clean Target
-# Removes the executable (first_app.out) and all compiled shader files (*.spv).
+test: $(TARGET)
+	./$(TARGET)
+
 clean:
-	rm -f first_app.out
-	rm -f *.spv
+	rm -f $(OBJS)
+	rm -rf shaders/compiled/
+	rm -rf build/

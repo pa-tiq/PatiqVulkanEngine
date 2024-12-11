@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pve_game_object.hpp"
-#include "pve_window.hpp"
+#include "pve/pve_game_object.hpp"
+#include "pve/pve_window.hpp"
 
 namespace pve {
 class KeyboardMovementController {

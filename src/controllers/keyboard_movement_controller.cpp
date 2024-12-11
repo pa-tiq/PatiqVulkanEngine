@@ -1,4 +1,4 @@
-#include "keyboard_movement_controller.hpp"
+#include "controllers/keyboard_movement_controller.hpp"
 
 namespace pve {
 void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, PveGameObject& gameObject) {

@@ -1,11 +1,11 @@
 #include "first_app.hpp"
 
 #include "constants/colors.hpp"
-#include "keyboard_movement_controller.hpp"
-#include "point_light_system.hpp"
-#include "pve_buffer.hpp"
-#include "pve_camera.hpp"
-#include "simple_render_system.hpp"
+#include "controllers/keyboard_movement_controller.hpp"
+#include "pve/pve_buffer.hpp"
+#include "pve/pve_camera.hpp"
+#include "systems/point_light_system.hpp"
+#include "systems/simple_render_system.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS            // No matter what system i'm in, angles are in radians, not degrees

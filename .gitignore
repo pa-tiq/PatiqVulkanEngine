@@ -36,3 +36,12 @@
 
 # Environment variables
 *.env
+
+# Build directory
+build/
+
+# Compiled shaders
+shaders/compiled/
+
+# Models
+models/

@@ -1,4 +1,4 @@
-#include "pve_camera.hpp"
+#include "pve/pve_camera.hpp"
 
 #include <cassert>
 #include <limits>

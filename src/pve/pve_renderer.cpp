@@ -1,4 +1,4 @@
-#include "pve_renderer.hpp"
+#include "pve/pve_renderer.hpp"
 
 #include <array>
 #include <cassert>

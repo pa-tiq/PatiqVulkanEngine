@@ -1,7 +1,7 @@
-#include "pve_model.hpp"
+#include "pve/pve_model.hpp"
 
-#include "pve_buffer.hpp"
-#include "pve_utils.hpp"
+#include "pve/pve_buffer.hpp"
+#include "pve/pve_utils.hpp"
 
 // libs
 #define TINYOBJLOADER_IMPLEMENTATION

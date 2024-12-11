@@ -3,24 +3,24 @@
 #include <memory>
 #include <vector>
 
-#include "pve_camera.hpp"
-#include "pve_device.hpp"
-#include "pve_frame_info.hpp"
-#include "pve_game_object.hpp"
-#include "pve_model.hpp"
-#include "pve_pipeline.hpp"
+#include "pve/pve_camera.hpp"
+#include "pve/pve_device.hpp"
+#include "pve/pve_frame_info.hpp"
+#include "pve/pve_game_object.hpp"
+#include "pve/pve_model.hpp"
+#include "pve/pve_pipeline.hpp"
 
 namespace pve {
-class SimpleRenderSystem {
+class PointLightSystem {
    public:
-    SimpleRenderSystem(PveDevice &device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
-    ~SimpleRenderSystem();
+    PointLightSystem(PveDevice &device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+    ~PointLightSystem();
 
-    SimpleRenderSystem(const SimpleRenderSystem &) = delete;
-    SimpleRenderSystem &operator=(const SimpleRenderSystem &) = delete;
+    PointLightSystem(const PointLightSystem &) = delete;
+    PointLightSystem &operator=(const PointLightSystem &) = delete;
 
     // Renderer: swapchain, command buffers and draw frame
-    void renderGameObjects(FrameInfo &frameInfo);
+    void render(FrameInfo &frameInfo);
 
    private:
     void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
