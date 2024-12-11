@@ -19,6 +19,7 @@ class PointLightSystem {
     PointLightSystem(const PointLightSystem &) = delete;
     PointLightSystem &operator=(const PointLightSystem &) = delete;
 
+    void update(FrameInfo &frameInfo, GlobalUbo &ubo);
     // Renderer: swapchain, command buffers and draw frame
     void render(FrameInfo &frameInfo);
 

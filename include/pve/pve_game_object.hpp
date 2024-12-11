@@ -20,9 +20,8 @@ struct TransformComponent {
     glm::mat3 normalMatrix();
 };
 
-struct RigidBody2dComponent {
-    glm::vec2 velocity;
-    float mass{1.0f};
+struct PointLightComponent {
+    float lightIntensity = 1.0f;
 };
 
 // a Game Object is anything in the game with a collection of properties and
@@ -36,6 +35,9 @@ class PveGameObject {
         static id_t currentId = 0;
         return PveGameObject{currentId++};
     }
+
+    static PveGameObject makePointLight(
+        float intensity = 10.0f, float radius = 0.1f, glm::vec3 color = glm::vec3(1.0f));
 
     // The PveGameObject class uses a unique ID (id_t) to identify objects.
     // Allowing copies or assignments could result in two objects sharing the
@@ -77,10 +79,13 @@ class PveGameObject {
 
     const id_t getId() { return id; }
 
-    std::shared_ptr<PveModel> model{};
     glm::vec3 color{};
     TransformComponent transform{};
     std::string name;
+
+    // Optional pointer components
+    std::shared_ptr<PveModel> model{};
+    std::unique_ptr<PointLightComponent> pointLight = nullptr;
 
    private:
     PveGameObject(id_t objId) : id{objId} {}

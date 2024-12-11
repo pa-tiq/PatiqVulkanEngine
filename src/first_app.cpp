@@ -22,14 +22,6 @@
 
 namespace pve {
 
-struct GlobalUbo {
-    glm::mat4 projection{1.f};
-    glm::mat4 view{1.f};
-    glm::vec4 ambientLightColor{1.f, 1.f, 1.f, .02f};
-    glm::vec3 lightPosition{-1.f};
-    alignas(16) glm::vec4 lightColor{1.f};
-};
-
 float MAX_FRAME_TIME = 1.0f;
 
 FirstApp::FirstApp() {
@@ -113,6 +105,7 @@ void FirstApp::run() {
             GlobalUbo ubo{};
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
+            pointLightSystem.update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
 
@@ -142,7 +135,7 @@ void FirstApp::loadGameObjects() {
     auto flatVase = PveGameObject::createGameObject();
     flatVase.model = pveModel;
     flatVase.name = "flatVase";
-    flatVase.transform.translation = {.0f, .5f, 0.f};
+    flatVase.transform.translation = {1.0f, .5f, 0.f};
     flatVase.transform.scale = {3.f, 3.f, 3.f};
     gameObjects.emplace(flatVase.getId(), std::move(flatVase));
 
@@ -150,7 +143,7 @@ void FirstApp::loadGameObjects() {
     auto smoothVase = PveGameObject::createGameObject();
     smoothVase.model = pveModel;
     smoothVase.name = "smoothVase";
-    smoothVase.transform.translation = {.9f, .5f, 0.f};
+    smoothVase.transform.translation = {2.0f, .5f, 0.f};
     smoothVase.transform.scale = {3.f, 3.f, 3.f};
     gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
 
@@ -160,6 +153,29 @@ void FirstApp::loadGameObjects() {
     floor.transform.translation = {0.f, .5f, 0.f};
     floor.transform.scale = {3.f, 1.f, 3.f};
     gameObjects.emplace(floor.getId(), std::move(floor));
+
+    // auto pointLight = PveGameObject::makePointLight(0.2f);
+    // gameObjects.emplace(pointLight.getId(), std::move(pointLight));
+
+    std::vector<glm::vec3> lightColors{
+        {1.f, .1f, .1f},
+        {.1f, .1f, 1.f},
+        {.1f, 1.f, .1f},
+        {1.f, 1.f, .1f},
+        {.1f, 1.f, 1.f},
+        {1.f, 1.f, 1.f}  //
+    };
+
+    for (int i = 0; i < lightColors.size(); i++) {
+        auto pointLight = PveGameObject::makePointLight(0.2f);
+        pointLight.color = lightColors[i];
+        auto rotateLight = glm::rotate(
+            glm::mat4(1.f),
+            (i * glm::two_pi<float>()) / lightColors.size(),
+            glm::vec3(0.f, -1.f, 0.f));
+        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
+        gameObjects.emplace(pointLight.getId(), std::move(pointLight));
+    }
 }
 
 }  // namespace pve
