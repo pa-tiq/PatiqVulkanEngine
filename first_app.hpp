@@ -22,20 +22,8 @@ class FirstApp {
     FirstApp &operator=(const FirstApp &) = delete;
 
     void run();
-    void runGravityPhysics();
 
    private:
-    void sierpinski(std::vector<PveModel::Vertex> &vertices, int depth, glm::vec2 left,
-                    glm::vec2 right, glm::vec2 top);
-    void sierpinskiTriangle();
-
-    void spinningTriangle();
-    void crazyTriangles();
-
-    std::unique_ptr<PveModel> createSquareModel(PveDevice &device, glm::vec2 offset);
-    std::unique_ptr<PveModel> createCircleModel(PveDevice &device, unsigned int numSides);
-    void GravityPhisics();
-
     void loadGameObjects();
 
     PveWindow pveWindow{WIDTH, HEIGHT, "Hello Vulkan!"};

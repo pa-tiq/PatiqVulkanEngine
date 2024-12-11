@@ -98,7 +98,7 @@ void PveModel::createIndexBuffers(const std::vector<uint32_t> &indices) {
         indexSize,
         indexCount,
         // Buffer will be used to hold vertex input data or as as the destination location for a memory transfer operation
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     pveDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);

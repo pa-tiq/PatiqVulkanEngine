@@ -2,7 +2,7 @@
 
 This is a beginner Vulkan Game Engine. Made following [this playlist](https://www.youtube.com/playlist?list=PL8327DO66nu9qYVKLDmdLW_84-yE4auCR) by Brendan Galea.
 
-Follow [this](https://vulkan-tutorial.com/Development_environment#page_Linux) tutorial to create your development environment. Commands:
+Follow [this tutorial](https://vulkan-tutorial.com/Development_environment#page_Linux) to create your development environment. Commands:
 
 ```bash
 sudo apt install vulkan-tools libvulkan-dev vulkan-validationlayers vulkan-utility-libraries-dev spirv-tools libglfw3-dev libglm-dev libxxf86vm-dev libxi-dev glslc
@@ -13,7 +13,7 @@ This project uses [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader
 
 You'll also need to create a `models/` folder and put `.obj` files there. [Here](https://drive.google.com/drive/folders/1Rr7UiVsbbmYocNqhYAruHGQ25Da_Jd4Z?usp=drive_link) are my files.
 
-Your .env file should have the path for GLSLC and tinyobjloader:
+Your `.env` file should have the path for GLSLC and tinyobjloader:
 
 ```
 GLSLC_PATH = /usr/bin/glslc
