@@ -68,8 +68,8 @@ void PvePipeline::createGraphicsPipeline(
     shaderStages[1].pNext = nullptr;
     shaderStages[1].pSpecializationInfo = nullptr;
 
-    auto bindingDescriptions = PveModel::Vertex::getBindingDescriptions();
-    auto attributeDescriptions = PveModel::Vertex::getAttributeDescriptions();
+    auto &bindingDescriptions = configInfo.bindingDescriptions;
+    auto &attributeDescriptions = configInfo.attributeDescriptions;
 
     // describe how we interpret the vertex buffer data that is the initial input into the graphics pipeline
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -224,6 +224,9 @@ void PvePipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo) {
     configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
     configInfo.dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
     configInfo.dynamicStateInfo.flags = 0;
+
+    configInfo.bindingDescriptions = PveModel::Vertex::getBindingDescriptions();
+    configInfo.attributeDescriptions = PveModel::Vertex::getAttributeDescriptions();
 }
 
 }  // namespace pve

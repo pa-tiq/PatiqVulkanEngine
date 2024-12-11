@@ -47,6 +47,11 @@ void PointLightSystem::createPipeline(VkRenderPass renderPass) {
 
     PipelineConfigInfo pipelineConfig{};
     PvePipeline::defaultPipelineConfigInfo(pipelineConfig);
+
+    // Point light system doesn't need vertex data
+    pipelineConfig.attributeDescriptions.clear();
+    pipelineConfig.bindingDescriptions.clear();
+
     // a render pass describes the structure and format of our frame buffer objects and their attachments
     // it's a blueprint that tells a graphics pipeline object what layout to expect from the output frame buffer
     // when it's time to actually render, the graphics pipeline is already prepared to output to our frame buffer,
