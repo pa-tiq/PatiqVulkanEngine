@@ -13,7 +13,8 @@ LDFLAGS = -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
 
 # Find all source files
 SRCS := $(shell find src -name '*.cpp')
-OBJS := $(SRCS:.cpp=.o)
+# Convert source paths to object file paths under build/
+OBJS := $(SRCS:src/%.cpp=build/%.o)
 
 # Find shader files
 VERT_SHADERS := $(shell find shaders -type f -name "*.vert")
@@ -27,12 +28,15 @@ TARGET = build/first_app.out
 $(shell mkdir -p build)
 $(shell mkdir -p shaders/compiled)
 
+# Create subdirectories for object files
+$(shell mkdir -p $(sort $(dir $(OBJS))))
+
 # Main target
 $(TARGET): $(SHADER_BINS) $(OBJS)
 	g++ $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 # Compile source files
-%.o: %.cpp
+build/%.o: src/%.cpp
 	g++ $(CFLAGS) -c $< -o $@
 
 # Compile shaders
@@ -46,6 +50,5 @@ test: $(TARGET)
 	./$(TARGET)
 
 clean:
-	rm -f $(OBJS)
 	rm -rf shaders/compiled/
 	rm -rf build/
