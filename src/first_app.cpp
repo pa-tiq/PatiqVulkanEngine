@@ -115,8 +115,11 @@ void FirstApp::run() {
 
             // render - record draw calls
             pveRenderer.beginSwapChainRenderPass(commandBuffer);
+
+            // order here matters
             simpleRenderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
+
             pveRenderer.endSwapChainRenderPass(commandBuffer);
             pveRenderer.endFrame();
         }

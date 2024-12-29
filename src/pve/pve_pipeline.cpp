@@ -11,11 +11,10 @@
 
 namespace pve {
 
-PvePipeline::PvePipeline(
-    PveDevice &device,
-    const std::string &vertFilepath,
-    const std::string &fragFilepath,
-    const PipelineConfigInfo &configInfo) : pveDevice{device} {
+PvePipeline::PvePipeline(PveDevice &device, const std::string &vertFilepath,
+                         const std::string &fragFilepath,
+                         const PipelineConfigInfo &configInfo)
+    : pveDevice{device} {
     createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
 }
 
@@ -40,12 +39,13 @@ std::vector<char> PvePipeline::readFile(const std::string &filepath) {
     return buffer;
 }
 
-void PvePipeline::createGraphicsPipeline(
-    const std::string &vertFilepath,
-    const std::string &fragFilepath,
-    const PipelineConfigInfo &configInfo) {
-    assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "Cannot create graphics pipeline: no pipelineLayout provided in configInfo");
-    assert(configInfo.renderPass != VK_NULL_HANDLE && "Cannot create graphics pipeline: no renderPass provided in configInfo");
+void PvePipeline::createGraphicsPipeline(const std::string &vertFilepath,
+                                         const std::string &fragFilepath,
+                                         const PipelineConfigInfo &configInfo) {
+    assert(configInfo.pipelineLayout != VK_NULL_HANDLE &&
+           "Cannot create graphics pipeline: no pipelineLayout provided in configInfo");
+    assert(configInfo.renderPass != VK_NULL_HANDLE &&
+           "Cannot create graphics pipeline: no renderPass provided in configInfo");
     auto vertCode = readFile(vertFilepath);
     auto fragCode = readFile(fragFilepath);
 
@@ -55,15 +55,18 @@ void PvePipeline::createGraphicsPipeline(
     // vertex shader stage and fragment shader stage
     VkPipelineShaderStageCreateInfo shaderStages[2];
     shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;  // this shader stage is for the vertex shader
+    shaderStages[0].stage =
+        VK_SHADER_STAGE_VERTEX_BIT;  // this shader stage is for the vertex shader
     shaderStages[0].module = vertShaderModule;
     shaderStages[0].pName = "main";  // name of the entry function in the vertex shader
     shaderStages[0].flags = 0;
     shaderStages[0].pNext = nullptr;
-    shaderStages[0].pSpecializationInfo = nullptr;  // mechanism to customize shader functionality
+    shaderStages[0].pSpecializationInfo =
+        nullptr;  // mechanism to customize shader functionality
 
     shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;  // this shader stage is for the fragment shader
+    shaderStages[1].stage =
+        VK_SHADER_STAGE_FRAGMENT_BIT;  // this shader stage is for the fragment shader
     shaderStages[1].module = fragShaderModule;
     shaderStages[1].pName = "main";  // name of the entry function in the fragment shader
     shaderStages[1].flags = 0;
@@ -76,14 +79,17 @@ void PvePipeline::createGraphicsPipeline(
     // describe how we interpret the vertex buffer data that is the initial input into the graphics pipeline
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
+    vertexInputInfo.vertexAttributeDescriptionCount =
+        static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.vertexBindingDescriptionCount =
+        static_cast<uint32_t>(bindingDescriptions.size());
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
     vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = 2;  // How many programmable stages our pipeline will use. 2 is for vertex and fragment shaders.
+    pipelineInfo.stageCount =
+        2;  // How many programmable stages our pipeline will use. 2 is for vertex and fragment shaders.
     pipelineInfo.pStages = shaderStages;
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
@@ -101,18 +107,21 @@ void PvePipeline::createGraphicsPipeline(
     pipelineInfo.basePipelineIndex = -1;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(pveDevice.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(pveDevice.device(), VK_NULL_HANDLE, 1, &pipelineInfo,
+                                  nullptr, &graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create graphics pipeline");
     }
 }
 
-void PvePipeline::createShaderModule(const std::vector<char> &code, VkShaderModule *shaderModule) {
+void PvePipeline::createShaderModule(const std::vector<char> &code,
+                                     VkShaderModule *shaderModule) {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = code.size();
     createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
-    if (vkCreateShaderModule(pveDevice.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS) {
+    if (vkCreateShaderModule(pveDevice.device(), &createInfo, nullptr, shaderModule) !=
+        VK_SUCCESS) {
         throw std::runtime_error("Failed to create shader module");
     }
 }
@@ -122,7 +131,8 @@ void PvePipeline::bind(VkCommandBuffer commandBuffer) {
 }
 
 void PvePipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo) {
-    configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    configInfo.inputAssemblyInfo.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     // TRIANGLE_LIST: every 3 vertices are grouped together into a separate triangle
     // TRIANGLE_STRIP: every additional vertex after the 3rd one uses the two last vertices to form the last triangle (create mesh)
     configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -156,7 +166,8 @@ void PvePipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo) {
        2    1  backface culling can lead to performance increase.
     */
     // > depthBias can be used to alter depth value by adding a constant value or by a factor of the fragment slope
-    configInfo.rasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    configInfo.rasterizationInfo.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     configInfo.rasterizationInfo.depthClampEnable = VK_FALSE;
     configInfo.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
     configInfo.rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;
@@ -175,7 +186,8 @@ void PvePipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo) {
     // enabled: multiple samples are taken along the edges of geometry to approximate
     // how much of the gragment is contained in the triangle.
     // MSAA = Multisample Anti-Aliasing
-    configInfo.multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    configInfo.multisampleInfo.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     configInfo.multisampleInfo.sampleShadingEnable = VK_FALSE;
     configInfo.multisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
     configInfo.multisampleInfo.minSampleShading = 1.0f;           // Optional
@@ -191,14 +203,19 @@ void PvePipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo) {
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
         VK_COLOR_COMPONENT_A_BIT;
     configInfo.colorBlendAttachment.blendEnable = VK_FALSE;
-    configInfo.colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-    configInfo.colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-    configInfo.colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
-    configInfo.colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-    configInfo.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-    configInfo.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
+    configInfo.colorBlendAttachment.srcColorBlendFactor =
+        VK_BLEND_FACTOR_ONE;  // Optional
+    configInfo.colorBlendAttachment.dstColorBlendFactor =
+        VK_BLEND_FACTOR_ZERO;                                        // Optional
+    configInfo.colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;  // Optional
+    configInfo.colorBlendAttachment.srcAlphaBlendFactor =
+        VK_BLEND_FACTOR_ONE;  // Optional
+    configInfo.colorBlendAttachment.dstAlphaBlendFactor =
+        VK_BLEND_FACTOR_ZERO;                                        // Optional
+    configInfo.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;  // Optional
 
-    configInfo.colorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    configInfo.colorBlendInfo.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     configInfo.colorBlendInfo.logicOpEnable = VK_FALSE;
     configInfo.colorBlendInfo.logicOp = VK_LOGIC_OP_COPY;  // Optional
     configInfo.colorBlendInfo.attachmentCount = 1;
@@ -210,7 +227,8 @@ void PvePipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo) {
 
     // a depth buffer doesn't keep track of individual layers.
     // a depth buffer keeps track of the depth value to whatever fragment is current on top for each pixel.
-    configInfo.depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    configInfo.depthStencilInfo.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     configInfo.depthStencilInfo.depthTestEnable = VK_TRUE;
     configInfo.depthStencilInfo.depthWriteEnable = VK_TRUE;
     configInfo.depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
@@ -221,14 +239,31 @@ void PvePipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo) {
     configInfo.depthStencilInfo.front = {};  // Optional
     configInfo.depthStencilInfo.back = {};   // Optional
 
-    configInfo.dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-    configInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    configInfo.dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT,
+                                      VK_DYNAMIC_STATE_SCISSOR};
+    configInfo.dynamicStateInfo.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
-    configInfo.dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
+    configInfo.dynamicStateInfo.dynamicStateCount =
+        static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
     configInfo.dynamicStateInfo.flags = 0;
 
     configInfo.bindingDescriptions = PveModel::Vertex::getBindingDescriptions();
     configInfo.attributeDescriptions = PveModel::Vertex::getAttributeDescriptions();
+}
+
+void PvePipeline::enableAlphaBlending(PipelineConfigInfo &configInfo) {
+    configInfo.colorBlendAttachment.blendEnable = VK_TRUE;
+    configInfo.colorBlendAttachment.colorWriteMask =
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+        VK_COLOR_COMPONENT_A_BIT;
+    configInfo.colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    configInfo.colorBlendAttachment.dstColorBlendFactor =
+        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;  // Optional
+    configInfo.colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    configInfo.colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    configInfo.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    configInfo.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 }
 
 }  // namespace pve
