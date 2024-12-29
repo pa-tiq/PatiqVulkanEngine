@@ -8,7 +8,7 @@
 #include "systems/simple_render_system.hpp"
 
 // libs
-#define GLM_FORCE_RADIANS            // No matter what system i'm in, angles are in radians, not degrees
+#define GLM_FORCE_RADIANS  // No matter what system i'm in, angles are in radians, not degrees
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE  // Forces GLM to expect depth buffer values to range from 0 to 1 instead of -1 to 1 (the opengl standard)
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -27,7 +27,8 @@ float MAX_FRAME_TIME = 1.0f;
 FirstApp::FirstApp() {
     globalPool = PveDescriptorPool::Builder(pveDevice)
                      .setMaxSets(PveSwapChain::MAX_FRAMES_IN_FLIGHT)
-                     .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, PveSwapChain::MAX_FRAMES_IN_FLIGHT)
+                     .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                  PveSwapChain::MAX_FRAMES_IN_FLIGHT)
                      .build();
     loadGameObjects();
 }
@@ -35,19 +36,18 @@ FirstApp::FirstApp() {
 FirstApp::~FirstApp() {}
 
 void FirstApp::run() {
-    std::vector<std::unique_ptr<PveBuffer>> uboBuffers(PveSwapChain::MAX_FRAMES_IN_FLIGHT);
+    std::vector<std::unique_ptr<PveBuffer>> uboBuffers(
+        PveSwapChain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < uboBuffers.size(); i++) {
         uboBuffers[i] = std::make_unique<PveBuffer>(
-            pveDevice,
-            sizeof(GlobalUbo),
-            1,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            pveDevice, sizeof(GlobalUbo), 1, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         uboBuffers[i]->map();
     }
 
     auto globalSetLayout = PveDescriptorSetLayout::Builder(pveDevice)
-                               .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+                               .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                           VK_SHADER_STAGE_ALL_GRAPHICS)
                                .build();
 
     std::vector<VkDescriptorSet> globalDescriptorSets(PveSwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -58,15 +58,15 @@ void FirstApp::run() {
             .build(globalDescriptorSets[i]);
     }
 
-    SimpleRenderSystem simpleRenderSystem{pveDevice,
-                                          pveRenderer.getSwapChainRenderPass(),
+    SimpleRenderSystem simpleRenderSystem{pveDevice, pveRenderer.getSwapChainRenderPass(),
                                           globalSetLayout->getDescriptorSetLayout()};
 
-    PointLightSystem pointLightSystem{pveDevice,
-                                      pveRenderer.getSwapChainRenderPass(),
+    PointLightSystem pointLightSystem{pveDevice, pveRenderer.getSwapChainRenderPass(),
                                       globalSetLayout->getDescriptorSetLayout()};
     PveCamera camera{};
-    camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));  // camera looks to the center of the cube
+    camera.setViewTarget(
+        glm::vec3(-1.f, -2.f, 2.f),
+        glm::vec3(0.f, 0.f, 2.5f));  // camera looks to the center of the cube
     // while the window doesn't want to close, poll window events
 
     // viewerObject has no model and won't be rendered. It's used to store the camera's current state.
@@ -80,12 +80,16 @@ void FirstApp::run() {
         glfwPollEvents();
 
         auto newTime = std::chrono::high_resolution_clock::now();
-        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(
+                              newTime - currentTime)
+                              .count();
         currentTime = newTime;
         frameTime = glm::min(frameTime, MAX_FRAME_TIME);
 
-        cameraController.moveInPlaneXZ(pveWindow.getGLFWWindow(), frameTime, viewerObject);
-        camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
+        cameraController.moveInPlaneXZ(pveWindow.getGLFWWindow(), frameTime,
+                                       viewerObject);
+        camera.setViewYXZ(viewerObject.transform.translation,
+                          viewerObject.transform.rotation);
 
         float aspect = pveRenderer.getAspectRatio();
         camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 100.f);
@@ -93,18 +97,18 @@ void FirstApp::run() {
         // the beginFrame function returns a nullptr if the swap chains needs to be recreated
         if (auto commandBuffer = pveRenderer.beginFrame()) {
             int frameIndex = pveRenderer.getFrameIndex();
-            FrameInfo frameInfo{
-                frameIndex,
-                frameTime,
-                commandBuffer,
-                camera,
-                globalDescriptorSets[frameIndex],
-                gameObjects};
+            FrameInfo frameInfo{frameIndex,
+                                frameTime,
+                                commandBuffer,
+                                camera,
+                                globalDescriptorSets[frameIndex],
+                                gameObjects};
 
             // prepare and update objects in memory
             GlobalUbo ubo{};
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
+            ubo.inverseView = camera.getInverseView();
             pointLightSystem.update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
@@ -123,7 +127,8 @@ void FirstApp::run() {
 }
 
 void FirstApp::loadGameObjects() {
-    std::shared_ptr<PveModel> pveModel = PveModel::createModelFromFile(pveDevice, "models/cube.obj");
+    std::shared_ptr<PveModel> pveModel =
+        PveModel::createModelFromFile(pveDevice, "models/cube.obj");
     auto cube = PveGameObject::createGameObject();
     cube.model = pveModel;
     cube.name = "cube";
@@ -158,22 +163,18 @@ void FirstApp::loadGameObjects() {
     // gameObjects.emplace(pointLight.getId(), std::move(pointLight));
 
     std::vector<glm::vec3> lightColors{
-        {1.f, .1f, .1f},
-        {.1f, .1f, 1.f},
-        {.1f, 1.f, .1f},
-        {1.f, 1.f, .1f},
-        {.1f, 1.f, 1.f},
-        {1.f, 1.f, 1.f}  //
+        {1.f, .1f, .1f}, {.1f, .1f, 1.f}, {.1f, 1.f, .1f},
+        {1.f, 1.f, .1f}, {.1f, 1.f, 1.f}, {1.f, 1.f, 1.f}  //
     };
 
     for (int i = 0; i < lightColors.size(); i++) {
         auto pointLight = PveGameObject::makePointLight(0.2f);
         pointLight.color = lightColors[i];
-        auto rotateLight = glm::rotate(
-            glm::mat4(1.f),
-            (i * glm::two_pi<float>()) / lightColors.size(),
-            glm::vec3(0.f, -1.f, 0.f));
-        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
+        auto rotateLight =
+            glm::rotate(glm::mat4(1.f), (i * glm::two_pi<float>()) / lightColors.size(),
+                        glm::vec3(0.f, -1.f, 0.f));
+        pointLight.transform.translation =
+            glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }
 }
