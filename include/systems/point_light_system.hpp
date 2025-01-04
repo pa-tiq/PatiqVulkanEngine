@@ -9,11 +9,13 @@
 #include "pve/pve_game_object.hpp"
 #include "pve/pve_model.hpp"
 #include "pve/pve_pipeline.hpp"
+#include "systems/shadow_map_system.hpp"
 
 namespace pve {
 class PointLightSystem {
    public:
-    PointLightSystem(PveDevice &device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+    PointLightSystem(PveDevice &device, VkRenderPass renderPass,
+                     VkDescriptorSetLayout globalSetLayout);
     ~PointLightSystem();
 
     PointLightSystem(const PointLightSystem &) = delete;
@@ -22,6 +24,7 @@ class PointLightSystem {
     void update(FrameInfo &frameInfo, GlobalUbo &ubo);
     // Renderer: swapchain, command buffers and draw frame
     void render(FrameInfo &frameInfo);
+    void updateShadowMap(FrameInfo &frameInfo);
 
    private:
     void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
@@ -35,5 +38,7 @@ class PointLightSystem {
     // memory management
     std::unique_ptr<PvePipeline> pvePipeline;
     VkPipelineLayout pipelineLayout;
+
+    std::unique_ptr<ShadowMapSystem> shadowMapSystem;
 };
 }  // namespace pve

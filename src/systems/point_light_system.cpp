@@ -1,5 +1,7 @@
 #include "systems/point_light_system.hpp"
 
+#include "systems/shadow_map_system.hpp"
+
 #define GLM_FORCE_RADIANS  // No matter what system i'm in, angles are in radians, not degrees
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE  // Forces GLM to expect depth buffer values to range from 0 to 1 instead of -1 to 1 (the opengl standard)
 #include <array>
@@ -22,6 +24,8 @@ PointLightSystem::PointLightSystem(PveDevice &device, VkRenderPass renderPass,
     : pveDevice{device} {
     createPipelineLayout(globalSetLayout);
     createPipeline(renderPass);
+
+    shadowMapSystem = std::make_unique<ShadowMapSystem>(device);
 }
 
 PointLightSystem::~PointLightSystem() {
@@ -72,6 +76,31 @@ void PointLightSystem::createPipeline(VkRenderPass renderPass) {
     pvePipeline = std::make_unique<PvePipeline>(
         pveDevice, "shaders/compiled/point_light.vert.spv",
         "shaders/compiled/point_light.frag.spv", pipelineConfig);
+}
+
+void PointLightSystem::updateShadowMap(FrameInfo &frameInfo) {
+    for (auto &kv : frameInfo.gameObjects) {
+        auto &obj = kv.second;
+        if (obj.pointLight == nullptr) continue;
+
+        // Calculate light space matrix
+        glm::mat4 lightProjection =
+            glm::perspective(glm::radians(90.0f),  // 90 degree FOV
+                             1.0f,                 // aspect ratio
+                             0.1f,                 // near plane
+                             100.0f                // far plane
+            );
+
+        glm::mat4 lightView = glm::lookAt(
+            obj.transform.translation,                                 // light position
+            obj.transform.translation + glm::vec3(0.0f, -1.0f, 0.0f),  // looking down
+            glm::vec3(0.0f, 0.0f, 1.0f)                                // up vector
+        );
+
+        glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+        // Record shadow pass
+        shadowMapSystem->recordShadowPass(frameInfo, lightSpaceMatrix);
+    }
 }
 
 void PointLightSystem::update(FrameInfo &frameInfo, GlobalUbo &ubo) {

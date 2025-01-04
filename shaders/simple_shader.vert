@@ -34,7 +34,10 @@ layout(set = 0, binding = 0) uniform GlobalUbo{
 layout(push_constant) uniform Push {
     mat4 modelMatrix;
     mat4 normalMatrix;
+    mat4 lightSpaceMatrix; 
 } push;
+
+layout(location = 3) out vec4 fragPosLightSpace;
 
 void main() {
 // the gl_Position is a 4-dimensional vector that maps to the output frame buffer image.
@@ -54,4 +57,7 @@ void main() {
     fragNormalWorld = normalize(mat3(push.normalMatrix) * normal);
     fragPosWorld = positionWorld.xyz;
     fragColor = color;
+
+    fragPosLightSpace = push.lightSpaceMatrix * vec4(fragPosWorld.xyz, 1.0);
+
 }

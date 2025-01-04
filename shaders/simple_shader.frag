@@ -3,6 +3,7 @@
 layout (location = 0) in vec3 fragColor;
 layout (location = 1) in vec3 fragPosWorld;
 layout (location = 2) in vec3 fragNormalWorld;
+layout (location = 3) in vec4 fragPosLightSpace;
 
 // this is the output variable.
 // the "layout" qualifier takes a location value.
@@ -24,10 +25,39 @@ layout(set = 0, binding = 0) uniform GlobalUbo{
     int numLights;
 } ubo;
 
+layout(set = 0, binding = 1) uniform sampler2D shadowMap;
+
 layout(push_constant) uniform Push {
     mat4 modelMatrix;
     mat4 normalMatrix;
 } push;
+
+// Shadow calculation function
+float ShadowCalculation(vec4 fragPosLightSpace) {
+    // Perform perspective divide (convert from clip space to NDC)
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    
+    // Transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    
+    // Get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+    
+    // Get closest depth stored in shadow map
+    float closestDepth = texture(shadowMap, projCoords.xy).r;
+    
+    // Add bias to prevent shadow acne
+    float bias = 0.005;
+    
+    // Check if current fragment is in shadow
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    
+    // If projection is outside shadow map, don't cast shadow
+    if(projCoords.z > 1.0)
+        shadow = 0.0;
+        
+    return shadow;
+}
 
 void main() {
     vec3 diffuseLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
@@ -55,4 +85,12 @@ void main() {
     }
 
     outColor = vec4(diffuseLight * fragColor + specularLight * fragColor, 1.0);
+    
+    // Calculate shadow
+    float shadow = ShadowCalculation(fragPosLightSpace);
+    
+    // Apply shadow to lighting
+    vec3 lightingColor = (1.0 - shadow) * (diffuseLight + specularLight);
+    
+    outColor = vec4(fragColor * lightingColor, 1.0);
 }
