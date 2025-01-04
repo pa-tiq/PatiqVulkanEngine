@@ -26,7 +26,15 @@ class PointLightSystem {
     void render(FrameInfo &frameInfo);
     void updateShadowMap(FrameInfo &frameInfo);
 
+    void setMainLightPosition(glm::vec3 position) { mainLightPos = position; }
+    void setMainLightTarget(glm::vec3 target) { mainLightTarget = target; }
+    void setLightOrthoSize(float size) { lightOrthoSize = size; }
+
    private:
+    glm::vec3 mainLightPos = {-2.0f, 4.0f, -1.0f};
+    glm::vec3 mainLightTarget = {0.0f, 0.0f, 0.0f};
+    float lightOrthoSize = 10.0f;
+
     void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
 
     // The renderPass will be used just to create the pipeline, we're not going to store it

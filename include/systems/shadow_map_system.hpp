@@ -9,10 +9,14 @@ namespace pve {
 
 class ShadowMapSystem {
    public:
+    static constexpr VkFormat SHADOW_MAP_FORMAT = VK_FORMAT_D32_SFLOAT;
     static constexpr uint32_t SHADOW_MAP_SIZE = 2048;  // Adjust resolution as needed
 
     ShadowMapSystem(PveDevice& device);
     ~ShadowMapSystem();
+
+    VkImageView getShadowMapView() const { return shadowMapImageView; }
+    VkSampler getShadowMapSampler() const { return shadowMapSampler; }
 
     void createShadowMapResources();
     void beginShadowPass(VkCommandBuffer commandBuffer);
@@ -27,13 +31,24 @@ class ShadowMapSystem {
 
     PveDevice& pveDevice;
 
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
-    VkImageView depthImageView;
+    VkImage shadowMapImage = VK_NULL_HANDLE;
+    VkDeviceMemory shadowMapMemory = VK_NULL_HANDLE;
+    VkImageView shadowMapImageView = VK_NULL_HANDLE;
+    VkSampler shadowMapSampler = VK_NULL_HANDLE;
+
     VkFramebuffer shadowFramebuffer;
     VkRenderPass shadowRenderPass;
     std::unique_ptr<PvePipeline> shadowPipeline;
     VkPipelineLayout pipelineLayout;
+
+    VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorPool descriptorPool;
+    VkDescriptorSet descriptorSet;
+
+    void createDescriptorSetLayout();
+    void createDescriptorPool();
+    void createDescriptorSet();
+    void createSampler();
 };
 
 }  // namespace pve

@@ -106,6 +106,24 @@ void PointLightSystem::updateShadowMap(FrameInfo &frameInfo) {
 void PointLightSystem::update(FrameInfo &frameInfo, GlobalUbo &ubo) {
     auto rotateLight =
         glm::rotate(glm::mat4(1.f), frameInfo.frameTime, glm::vec3(0.f, -1.f, 0.f));
+
+    mainLightPos = glm::vec3(rotateLight * glm::vec4(mainLightPos, 1.f));
+
+    // Calculate light space matrix for shadow mapping
+    float nearPlane = 0.1f;
+    float farPlane = 100.0f;
+
+    // Create light projection matrix (for directional light or spot light)
+    glm::mat4 lightProjection =
+        glm::ortho(-lightOrthoSize, lightOrthoSize, -lightOrthoSize, lightOrthoSize,
+                   nearPlane, farPlane);
+
+    // Create light view matrix
+    glm::mat4 lightView =
+        glm::lookAt(mainLightPos, mainLightTarget, glm::vec3(0.0f, 1.0f, 0.0f));
+    // Combine into light space matrix
+    ubo.lightSpaceMatrix = lightProjection * lightView;
+
     int lightIndex = 0;
     for (auto &kv : frameInfo.gameObjects) {
         auto &obj = kv.second;

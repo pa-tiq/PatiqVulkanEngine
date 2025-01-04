@@ -15,12 +15,19 @@ namespace pve {
 
 ShadowMapSystem::ShadowMapSystem(PveDevice& device) : pveDevice{device} {
     createShadowMapResources();
+    createDescriptorSetLayout();
+    createDescriptorPool();
+    createSampler();
+    createDescriptorSet();
 }
 
 ShadowMapSystem::~ShadowMapSystem() {
-    vkDestroyImageView(pveDevice.device(), depthImageView, nullptr);
-    vkDestroyImage(pveDevice.device(), depthImage, nullptr);
-    vkFreeMemory(pveDevice.device(), depthImageMemory, nullptr);
+    vkDestroySampler(pveDevice.device(), shadowMapSampler, nullptr);
+    vkDestroyDescriptorPool(pveDevice.device(), descriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(pveDevice.device(), descriptorSetLayout, nullptr);
+    vkDestroyImageView(pveDevice.device(), shadowMapImageView, nullptr);
+    vkDestroyImage(pveDevice.device(), shadowMapImage, nullptr);
+    vkFreeMemory(pveDevice.device(), shadowMapMemory, nullptr);
     vkDestroyFramebuffer(pveDevice.device(), shadowFramebuffer, nullptr);
     vkDestroyRenderPass(pveDevice.device(), shadowRenderPass, nullptr);
     vkDestroyPipelineLayout(pveDevice.device(), pipelineLayout, nullptr);
@@ -34,8 +41,6 @@ void ShadowMapSystem::createShadowMapResources() {
 }
 
 void ShadowMapSystem::createDepthResources() {
-    VkFormat depthFormat = VK_FORMAT_D32_SFLOAT;  // Common depth format
-
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -44,30 +49,31 @@ void ShadowMapSystem::createDepthResources() {
     imageInfo.extent.depth = 1;
     imageInfo.mipLevels = 1;
     imageInfo.arrayLayers = 1;
-    imageInfo.format = depthFormat;
+    imageInfo.format = SHADOW_MAP_FORMAT;
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage =
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     pveDevice.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                  depthImage, depthImageMemory);
+                                  shadowMapImage, shadowMapMemory);
 
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = depthImage;
+    viewInfo.image = shadowMapImage;
     viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = depthFormat;
+    viewInfo.format = SHADOW_MAP_FORMAT;
     viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.levelCount = 1;
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = 1;
 
-    if (vkCreateImageView(pveDevice.device(), &viewInfo, nullptr, &depthImageView) !=
+    if (vkCreateImageView(pveDevice.device(), &viewInfo, nullptr, &shadowMapImageView) !=
         VK_SUCCESS) {
-        throw std::runtime_error("failed to create depth image view!");
+        throw std::runtime_error("failed to create shadow map image view!");
     }
 }
 
@@ -129,8 +135,8 @@ void ShadowMapSystem::createPipeline() {
     pipelineConfig.colorBlendInfo.attachmentCount = 0;
 
     shadowPipeline = std::make_unique<PvePipeline>(
-        pveDevice, "shaders/shadow_map.vert.spv",
-        "",  // No fragment shader needed for depth-only pass
+        pveDevice, "shaders/compiled/shadow_map.vert.spv",
+        "shaders/compiled/shadow_map.frag.spv",  // No fragment shader needed for depth-only pass
         pipelineConfig);
 }
 
@@ -139,7 +145,7 @@ void ShadowMapSystem::createFramebuffer() {
     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebufferInfo.renderPass = shadowRenderPass;
     framebufferInfo.attachmentCount = 1;
-    framebufferInfo.pAttachments = &depthImageView;
+    framebufferInfo.pAttachments = &shadowMapImageView;
     framebufferInfo.width = SHADOW_MAP_SIZE;
     framebufferInfo.height = SHADOW_MAP_SIZE;
     framebufferInfo.layers = 1;
@@ -210,6 +216,95 @@ void ShadowMapSystem::recordShadowPass(FrameInfo& frameInfo, glm::mat4 lightSpac
 
 void ShadowMapSystem::endShadowPass(VkCommandBuffer commandBuffer) {
     vkCmdEndRenderPass(commandBuffer);
+}
+
+void ShadowMapSystem::createDescriptorSetLayout() {
+    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+    samplerLayoutBinding.binding = 1;  // matches shader binding
+    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &samplerLayoutBinding;
+
+    if (vkCreateDescriptorSetLayout(pveDevice.device(), &layoutInfo, nullptr,
+                                    &descriptorSetLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
+}
+
+void ShadowMapSystem::createDescriptorPool() {
+    VkDescriptorPoolSize poolSize{};
+    poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSize.descriptorCount = 1;
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.maxSets = 1;
+
+    if (vkCreateDescriptorPool(pveDevice.device(), &poolInfo, nullptr, &descriptorPool) !=
+        VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor pool!");
+    }
+}
+
+void ShadowMapSystem::createDescriptorSet() {
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &descriptorSetLayout;
+
+    if (vkAllocateDescriptorSets(pveDevice.device(), &allocInfo, &descriptorSet) !=
+        VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate descriptor set!");
+    }
+
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = shadowMapImageView;
+    imageInfo.sampler = shadowMapSampler;  // You'll need to create this
+
+    VkWriteDescriptorSet descriptorWrite{};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = descriptorSet;
+    descriptorWrite.dstBinding = 1;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pImageInfo = &imageInfo;
+
+    vkUpdateDescriptorSets(pveDevice.device(), 1, &descriptorWrite, 0, nullptr);
+}
+
+void ShadowMapSystem::createSampler() {
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.maxAnisotropy = 1.0f;
+    samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_TRUE;
+    samplerInfo.compareOp = VK_COMPARE_OP_LESS;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = 0.0f;
+
+    if (vkCreateSampler(pveDevice.device(), &samplerInfo, nullptr, &shadowMapSampler) !=
+        VK_SUCCESS) {
+        throw std::runtime_error("failed to create shadow map sampler!");
+    }
 }
 
 }  // namespace pve

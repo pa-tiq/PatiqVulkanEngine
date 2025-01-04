@@ -29,7 +29,11 @@ FirstApp::FirstApp() {
                      .setMaxSets(PveSwapChain::MAX_FRAMES_IN_FLIGHT)
                      .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                                   PveSwapChain::MAX_FRAMES_IN_FLIGHT)
+                     .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                  PveSwapChain::MAX_FRAMES_IN_FLIGHT)
                      .build();
+    shadowMapSystem = std::make_unique<ShadowMapSystem>(pveDevice);
+
     loadGameObjects();
 }
 
@@ -48,13 +52,20 @@ void FirstApp::run() {
     auto globalSetLayout = PveDescriptorSetLayout::Builder(pveDevice)
                                .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                                            VK_SHADER_STAGE_ALL_GRAPHICS)
+                               .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                           VK_SHADER_STAGE_FRAGMENT_BIT)
                                .build();
 
     std::vector<VkDescriptorSet> globalDescriptorSets(PveSwapChain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < globalDescriptorSets.size(); i++) {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.sampler = shadowMapSystem->getShadowMapSampler();
+        imageInfo.imageView = shadowMapSystem->getShadowMapView();
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         PveDescriptorWriter(*globalSetLayout, *globalPool)
             .writeBuffer(0, &bufferInfo)
+            .writeImage(1, &imageInfo)
             .build(globalDescriptorSets[i]);
     }
 

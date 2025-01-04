@@ -8,6 +8,7 @@
 #include "pve/pve_game_object.hpp"
 #include "pve/pve_renderer.hpp"
 #include "pve/pve_window.hpp"
+#include "systems/shadow_map_system.hpp"
 
 namespace pve {
 class FirstApp {
@@ -31,6 +32,9 @@ class FirstApp {
     PveRenderer pveRenderer{pveWindow, pveDevice};
 
     std::unique_ptr<PveDescriptorPool> globalPool{};
+    std::unique_ptr<ShadowMapSystem> shadowMapSystem;
     PveGameObject::Map gameObjects;
+
+    static constexpr uint32_t SHADOW_MAP_SIZE = 2048;
 };
 }  // namespace pve
