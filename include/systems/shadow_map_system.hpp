@@ -31,6 +31,8 @@ class ShadowMapSystem {
 
     PveDevice& pveDevice;
 
+    VkImageLayout currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
     VkImage shadowMapImage = VK_NULL_HANDLE;
     VkDeviceMemory shadowMapMemory = VK_NULL_HANDLE;
     VkImageView shadowMapImageView = VK_NULL_HANDLE;

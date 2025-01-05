@@ -76,8 +76,8 @@ void FirstApp::run() {
                                       globalSetLayout->getDescriptorSetLayout()};
     PveCamera camera{};
     camera.setViewTarget(
-        glm::vec3(-1.f, -2.f, 2.f),
-        glm::vec3(0.f, 0.f, 2.5f));  // camera looks to the center of the cube
+        glm::vec3(-5.f, -5.f, 5.f),
+        glm::vec3(1.f, 1.f, 2.5f));  // camera looks to the center of the cube
     // while the window doesn't want to close, poll window events
 
     // viewerObject has no model and won't be rendered. It's used to store the camera's current state.
@@ -115,6 +115,8 @@ void FirstApp::run() {
                                 globalDescriptorSets[frameIndex],
                                 gameObjects};
 
+            pointLightSystem.updateShadowMap(frameInfo);
+
             // prepare and update objects in memory
             GlobalUbo ubo{};
             ubo.projection = camera.getProjection();
@@ -146,15 +148,23 @@ void FirstApp::loadGameObjects() {
     auto cube = PveGameObject::createGameObject();
     cube.model = pveModel;
     cube.name = "cube";
-    cube.transform.translation = {-2.0f, -0.2f, 0.f};
+    cube.transform.translation = {-1.0f, -1.0f, 0.f};
     cube.transform.scale = {.3f, .3f, .3f};
     gameObjects.emplace(cube.getId(), std::move(cube));
+
+    pveModel = PveModel::createModelFromFile(pveDevice, "models/quad.obj");
+    auto floor = PveGameObject::createGameObject();
+    floor.model = pveModel;
+    floor.name = "floor";
+    floor.transform.translation = {0.f, 0.0f, 0.f};
+    floor.transform.scale = {3.f, 1.f, 3.f};
+    gameObjects.emplace(floor.getId(), std::move(floor));
 
     pveModel = PveModel::createModelFromFile(pveDevice, "models/flat_vase.obj");
     auto flatVase = PveGameObject::createGameObject();
     flatVase.model = pveModel;
     flatVase.name = "flatVase";
-    flatVase.transform.translation = {1.0f, .5f, 0.f};
+    flatVase.transform.translation = {1.0f, 0.f, 0.f};
     flatVase.transform.scale = {3.f, 3.f, 3.f};
     gameObjects.emplace(flatVase.getId(), std::move(flatVase));
 
@@ -162,24 +172,12 @@ void FirstApp::loadGameObjects() {
     auto smoothVase = PveGameObject::createGameObject();
     smoothVase.model = pveModel;
     smoothVase.name = "smoothVase";
-    smoothVase.transform.translation = {2.0f, .5f, 0.f};
+    smoothVase.transform.translation = {2.0f, 0.f, 0.f};
     smoothVase.transform.scale = {3.f, 3.f, 3.f};
     gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
 
-    pveModel = PveModel::createModelFromFile(pveDevice, "models/quad.obj");
-    auto floor = PveGameObject::createGameObject();
-    floor.model = pveModel;
-    floor.transform.translation = {0.f, .5f, 0.f};
-    floor.transform.scale = {3.f, 1.f, 3.f};
-    gameObjects.emplace(floor.getId(), std::move(floor));
-
-    // auto pointLight = PveGameObject::makePointLight(0.2f);
-    // gameObjects.emplace(pointLight.getId(), std::move(pointLight));
-
-    std::vector<glm::vec3> lightColors{
-        {1.f, .1f, .1f}, {.1f, .1f, 1.f}, {.1f, 1.f, .1f},
-        {1.f, 1.f, .1f}, {.1f, 1.f, 1.f}, {1.f, 1.f, 1.f}  //
-    };
+    std::vector<glm::vec3> lightColors{{1.f, .1f, .1f}, {.1f, .1f, 1.f}, {.1f, 1.f, .1f},
+                                       {1.f, 1.f, .1f}, {.1f, 1.f, 1.f}, {1.f, 1.f, 1.f}};
 
     for (int i = 0; i < lightColors.size(); i++) {
         auto pointLight = PveGameObject::makePointLight(0.2f);
@@ -188,7 +186,7 @@ void FirstApp::loadGameObjects() {
             glm::rotate(glm::mat4(1.f), (i * glm::two_pi<float>()) / lightColors.size(),
                         glm::vec3(0.f, -1.f, 0.f));
         pointLight.transform.translation =
-            glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
+            glm::vec3(rotateLight * glm::vec4(-1.f, -2.f, -1.f, 1.f));
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }
 }

@@ -15,9 +15,9 @@ namespace pve {
 
 ShadowMapSystem::ShadowMapSystem(PveDevice& device) : pveDevice{device} {
     createShadowMapResources();
+    createSampler();
     createDescriptorSetLayout();
     createDescriptorPool();
-    createSampler();
     createDescriptorSet();
 }
 
@@ -75,6 +75,32 @@ void ShadowMapSystem::createDepthResources() {
         VK_SUCCESS) {
         throw std::runtime_error("failed to create shadow map image view!");
     }
+
+    VkCommandBuffer commandBuffer = pveDevice.beginSingleTimeCommands();
+
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.image = shadowMapImage;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr,
+                         1, &barrier);
+
+    pveDevice.endSingleTimeCommands(commandBuffer);
+
+    // Update the tracked layout
+    currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
 void ShadowMapSystem::createRenderPass() {
@@ -157,6 +183,25 @@ void ShadowMapSystem::createFramebuffer() {
 }
 
 void ShadowMapSystem::beginShadowPass(VkCommandBuffer commandBuffer) {
+    VkImageMemoryBarrier depthImageBarrier{};
+    depthImageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    depthImageBarrier.oldLayout = currentLayout;
+    depthImageBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthImageBarrier.image = shadowMapImage;
+    depthImageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    depthImageBarrier.subresourceRange.baseMipLevel = 0;
+    depthImageBarrier.subresourceRange.levelCount = 1;
+    depthImageBarrier.subresourceRange.baseArrayLayer = 0;
+    depthImageBarrier.subresourceRange.layerCount = 1;
+    depthImageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    depthImageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    depthImageBarrier.srcAccessMask = 0;
+    depthImageBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0, 0, nullptr, 0,
+                         nullptr, 1, &depthImageBarrier);
+
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = shadowRenderPass;
@@ -197,8 +242,8 @@ void ShadowMapSystem::recordShadowPass(FrameInfo& frameInfo, glm::mat4 lightSpac
 
         // Push constants for shadow pass
         struct PushConstants {
-            glm::mat4 lightSpaceMatrix;
             glm::mat4 modelMatrix;
+            glm::mat4 lightSpaceMatrix;
         } push{};
 
         push.lightSpaceMatrix = lightSpaceMatrix;
@@ -216,6 +261,27 @@ void ShadowMapSystem::recordShadowPass(FrameInfo& frameInfo, glm::mat4 lightSpac
 
 void ShadowMapSystem::endShadowPass(VkCommandBuffer commandBuffer) {
     vkCmdEndRenderPass(commandBuffer);
+
+    VkImageMemoryBarrier depthImageBarrier{};
+    depthImageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    depthImageBarrier.oldLayout = currentLayout;
+    depthImageBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    depthImageBarrier.image = shadowMapImage;
+    depthImageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    depthImageBarrier.subresourceRange.baseMipLevel = 0;
+    depthImageBarrier.subresourceRange.levelCount = 1;
+    depthImageBarrier.subresourceRange.baseArrayLayer = 0;
+    depthImageBarrier.subresourceRange.layerCount = 1;
+    depthImageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    depthImageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    depthImageBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    depthImageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr,
+                         1, &depthImageBarrier);
+
+    currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
 void ShadowMapSystem::createDescriptorSetLayout() {
@@ -254,6 +320,11 @@ void ShadowMapSystem::createDescriptorPool() {
 }
 
 void ShadowMapSystem::createDescriptorSet() {
+    if (shadowMapImageView == VK_NULL_HANDLE || shadowMapSampler == VK_NULL_HANDLE) {
+        throw std::runtime_error(
+            "Attempted to create descriptor set before required resources!");
+    }
+
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = descriptorPool;

@@ -79,51 +79,26 @@ void PointLightSystem::createPipeline(VkRenderPass renderPass) {
 }
 
 void PointLightSystem::updateShadowMap(FrameInfo &frameInfo) {
-    for (auto &kv : frameInfo.gameObjects) {
-        auto &obj = kv.second;
-        if (obj.pointLight == nullptr) continue;
+    // Position light above and slightly to the side of the scene
+    glm::vec3 lightPos = {-2.0f, 4.0f, -2.0f};
+    float orthoSize = 10.0f;
 
-        // Calculate light space matrix
-        glm::mat4 lightProjection =
-            glm::perspective(glm::radians(90.0f),  // 90 degree FOV
-                             1.0f,                 // aspect ratio
-                             0.1f,                 // near plane
-                             100.0f                // far plane
-            );
+    glm::mat4 lightProjection =
+        glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, 0.1f, 20.0f);
 
-        glm::mat4 lightView = glm::lookAt(
-            obj.transform.translation,                                 // light position
-            obj.transform.translation + glm::vec3(0.0f, -1.0f, 0.0f),  // looking down
-            glm::vec3(0.0f, 0.0f, 1.0f)                                // up vector
-        );
+    glm::mat4 lightView =
+        glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f),  // Look at center of scene
+                    glm::vec3(0.0f, 1.0f, 0.0f));
 
-        glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-        // Record shadow pass
-        shadowMapSystem->recordShadowPass(frameInfo, lightSpaceMatrix);
-    }
+    glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+    // Record shadow pass using the shadow map system
+    shadowMapSystem->recordShadowPass(frameInfo, lightSpaceMatrix);
 }
 
 void PointLightSystem::update(FrameInfo &frameInfo, GlobalUbo &ubo) {
     auto rotateLight =
         glm::rotate(glm::mat4(1.f), frameInfo.frameTime, glm::vec3(0.f, -1.f, 0.f));
-
-    mainLightPos = glm::vec3(rotateLight * glm::vec4(mainLightPos, 1.f));
-
-    // Calculate light space matrix for shadow mapping
-    float nearPlane = 0.1f;
-    float farPlane = 100.0f;
-
-    // Create light projection matrix (for directional light or spot light)
-    glm::mat4 lightProjection =
-        glm::ortho(-lightOrthoSize, lightOrthoSize, -lightOrthoSize, lightOrthoSize,
-                   nearPlane, farPlane);
-
-    // Create light view matrix
-    glm::mat4 lightView =
-        glm::lookAt(mainLightPos, mainLightTarget, glm::vec3(0.0f, 1.0f, 0.0f));
-    // Combine into light space matrix
-    ubo.lightSpaceMatrix = lightProjection * lightView;
-
     int lightIndex = 0;
     for (auto &kv : frameInfo.gameObjects) {
         auto &obj = kv.second;

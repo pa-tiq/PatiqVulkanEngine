@@ -33,7 +33,6 @@ layout(push_constant) uniform Push {
     mat4 normalMatrix;
 } push;
 
-// Shadow calculation function
 float ShadowCalculation(vec4 fragPosLightSpace) {
     // Perform perspective divide (convert from clip space to NDC)
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -51,7 +50,7 @@ float ShadowCalculation(vec4 fragPosLightSpace) {
     float bias = 0.005;
     
     // Check if current fragment is in shadow
-    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    float shadow = currentDepth - bias > closestDepth ? 0.5 : 0.0;
     
     // If projection is outside shadow map, don't cast shadow
     if(projCoords.z > 1.0)
