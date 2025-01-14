@@ -80,15 +80,17 @@ void PointLightSystem::createPipeline(VkRenderPass renderPass) {
 
 void PointLightSystem::updateShadowMap(FrameInfo &frameInfo) {
     // Position light above and slightly to the side of the scene
-    glm::vec3 lightPos = {-2.0f, 4.0f, -2.0f};
-    float orthoSize = 10.0f;
+    glm::vec3 lightPos = {0.0f, 10.0f, 10.0f};
+    float orthoSize = 20.0f;
 
-    glm::mat4 lightProjection =
-        glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, 0.1f, 20.0f);
+    glm::mat4 lightProjection = glm::ortho(-orthoSize, orthoSize,  // Left, Right
+                                           -orthoSize, orthoSize,  // Bottom, Top
+                                           0.1f, 50.0f);           // Near, Far
 
-    glm::mat4 lightView =
-        glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f),  // Look at center of scene
-                    glm::vec3(0.0f, 1.0f, 0.0f));
+    // View matrix looking from the light's position towards the origin
+    glm::mat4 lightView = glm::lookAt(lightPos,                      // Light position
+                                      glm::vec3(0.0f, 0.0f, 0.0f),   // Look at the origin
+                                      glm::vec3(0.0f, 1.0f, 0.0f));  // Up vector
 
     glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 

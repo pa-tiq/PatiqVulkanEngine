@@ -101,6 +101,16 @@ void FirstApp::run() {
                                        viewerObject);
         camera.setViewYXZ(viewerObject.transform.translation,
                           viewerObject.transform.rotation);
+        for (auto& kv : gameObjects) {
+            auto& obj = kv.second;
+
+            if (obj.name == "cube") {
+                obj.transform.rotation.y =
+                    glm::mod(obj.transform.rotation.y + 0.001f, glm::two_pi<float>());
+                obj.transform.rotation.x =
+                    glm::mod(obj.transform.rotation.x + 0.005f, glm::two_pi<float>());
+            }
+        }
 
         float aspect = pveRenderer.getAspectRatio();
         camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 100.f);
@@ -115,6 +125,7 @@ void FirstApp::run() {
                                 globalDescriptorSets[frameIndex],
                                 gameObjects};
 
+            // Update shadow map before main rendering
             pointLightSystem.updateShadowMap(frameInfo);
 
             // prepare and update objects in memory

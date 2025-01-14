@@ -240,6 +240,8 @@ void ShadowMapSystem::recordShadowPass(FrameInfo& frameInfo, glm::mat4 lightSpac
         auto& obj = kv.second;
         if (obj.model == nullptr) continue;
 
+        glm::mat4 modelMatrix = obj.transform.mat4();
+
         // Push constants for shadow pass
         struct PushConstants {
             glm::mat4 modelMatrix;
@@ -247,7 +249,7 @@ void ShadowMapSystem::recordShadowPass(FrameInfo& frameInfo, glm::mat4 lightSpac
         } push{};
 
         push.lightSpaceMatrix = lightSpaceMatrix;
-        push.modelMatrix = obj.transform.mat4();
+        push.modelMatrix = modelMatrix;
 
         vkCmdPushConstants(frameInfo.commandBuffer, pipelineLayout,
                            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &push);

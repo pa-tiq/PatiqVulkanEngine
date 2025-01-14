@@ -1,6 +1,6 @@
 #include "systems/simple_render_system.hpp"
 
-#define GLM_FORCE_RADIANS            // No matter what system i'm in, angles are in radians, not degrees
+#define GLM_FORCE_RADIANS  // No matter what system i'm in, angles are in radians, not degrees
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE  // Forces GLM to expect depth buffer values to range from 0 to 1 instead of -1 to 1 (the opengl standard)
 #include <array>
 #include <cassert>
@@ -15,7 +15,8 @@ struct SimplePushConstantData {
     glm::mat4 normalMatrix{1.f};  // initialized as an identity matrix
 };
 
-SimpleRenderSystem::SimpleRenderSystem(PveDevice &device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
+SimpleRenderSystem::SimpleRenderSystem(PveDevice &device, VkRenderPass renderPass,
+                                       VkDescriptorSetLayout globalSetLayout)
     : pveDevice{device} {
     createPipelineLayout(globalSetLayout);
     createPipeline(renderPass);
@@ -36,7 +37,8 @@ void SimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLay
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+    pipelineLayoutInfo.setLayoutCount =
+        static_cast<uint32_t>(descriptorSetLayouts.size());
     pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
@@ -59,32 +61,26 @@ void SimpleRenderSystem::createPipeline(VkRenderPass renderPass) {
     // multiple subpasses can be grouped together into a single render pass
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.pipelineLayout = pipelineLayout;
-    pvePipeline =
-        std::make_unique<PvePipeline>(pveDevice, "shaders/compiled/simple_shader.vert.spv",
-                                      "shaders/compiled/simple_shader.frag.spv", pipelineConfig);
+    pvePipeline = std::make_unique<PvePipeline>(
+        pveDevice, "shaders/compiled/simple_shader.vert.spv",
+        "shaders/compiled/simple_shader.frag.spv", pipelineConfig);
 }
 
 void SimpleRenderSystem::renderGameObjects(FrameInfo &frameInfo) {
     pvePipeline->bind(frameInfo.commandBuffer);
-    vkCmdBindDescriptorSets(
-        frameInfo.commandBuffer,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        pipelineLayout,
-        0,
-        1,
-        &frameInfo.globalDescriptorSet,
-        0,
-        nullptr);
+    vkCmdBindDescriptorSets(frameInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            pipelineLayout, 0, 1, &frameInfo.globalDescriptorSet, 0,
+                            nullptr);
 
     for (auto &keyvalue : frameInfo.gameObjects) {
         auto &obj = keyvalue.second;
         if (obj.model == nullptr) continue;
-        if (obj.name == "cube") {
-            obj.transform.rotation.y = glm::mod(obj.transform.rotation.y + 0.001f,
-                                                glm::two_pi<float>());
-            obj.transform.rotation.x = glm::mod(obj.transform.rotation.x + 0.005f,
-                                                glm::two_pi<float>());
-        }
+        // if (obj.name == "cube") {
+        //     obj.transform.rotation.y =
+        //         glm::mod(obj.transform.rotation.y + 0.001f, glm::two_pi<float>());
+        //     obj.transform.rotation.x =
+        //         glm::mod(obj.transform.rotation.x + 0.005f, glm::two_pi<float>());
+        // }
 
         SimplePushConstantData push{};
         push.modelMatrix = obj.transform.mat4();
