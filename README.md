@@ -5,7 +5,7 @@ This is a beginner Vulkan Game Engine. Made following [this playlist](https://ww
 Follow [this tutorial](https://vulkan-tutorial.com/Development_environment#page_Linux) to create your development environment. Commands:
 
 ```bash
-sudo apt install vulkan-tools libvulkan-dev vulkan-validationlayers vulkan-utility-libraries-dev spirv-tools libglfw3-dev libglm-dev libxxf86vm-dev libxi-dev glslc
+sudo apt install vulkan-tools libvulkan-dev vulkan-validationlayers vulkan-utility-libraries-dev spirv-tools libglfw3-dev libglm-dev libxxf86vm-dev libxi-dev glslc make
 
 whereis glslc
 ```
