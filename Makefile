@@ -3,7 +3,7 @@ include .env
 # specify compiler options
 # -std=c++17: Use the C++17 standard.
 # -O2: Optimize for speed without excessive compile time.
-CFLAGS = -std=c++17 -O2 -I${TINYOBJLOADER_PATH} -Iinclude
+CFLAGS = -std=c++17 -O2 -I${TINYOBJLOADER_PATH} -I${NLOHMANNJSON_PATH} -Iinclude
 
 # LDFLAGS: Specifies linker options.
 # -lglfw: Links the GLFW library (for windowing and OpenGL/Vulkan integration).

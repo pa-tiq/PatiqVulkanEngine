@@ -1,0 +1,12 @@
+{
+  "menu": {
+    "title": "Patiq Vulkan Engine",
+    "play": "Jogar",
+    "exit": "Sair"
+  },
+  "pause": {
+    "title": "Pausado",
+    "resume": "Continuar",
+    "return_to_menu": "Voltar ao Menu Principal"
+  }
+}

@@ -4,7 +4,11 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/external/**"
+                "${workspaceFolder}/external/**",
+                "/usr/include",
+                "/usr/include/GLFW",
+                "/usr/include/vulkan",
+                "/usr/include/glm"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

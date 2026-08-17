@@ -6,6 +6,7 @@
 #include "pve/pve_camera.hpp"
 #include "systems/point_light_system.hpp"
 #include "systems/simple_render_system.hpp"
+#include "systems/ui_render_system.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS  // No matter what system i'm in, angles are in radians, not degrees
@@ -17,14 +18,15 @@
 #include <array>
 #include <cassert>
 #include <chrono>
+#include <iostream>
 #include <stdexcept>
 #include <vector>
 
 namespace pve {
 
-float MAX_FRAME_TIME = 1.0f;
+float MAX_FRAME_TIME = 0.1f;
 
-FirstApp::FirstApp() {
+FirstApp::FirstApp() : gameState(GameStateManager::getInstance()), i18n(I18n::getInstance()) {
     globalPool = PveDescriptorPool::Builder(pveDevice)
                      .setMaxSets(PveSwapChain::MAX_FRAMES_IN_FLIGHT)
                      .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -35,6 +37,9 @@ FirstApp::FirstApp() {
     shadowMapSystem = std::make_unique<ShadowMapSystem>(pveDevice);
 
     loadGameObjects();
+    
+    // Set default language to Portuguese
+    i18n.setLanguage("pt_br");
 }
 
 FirstApp::~FirstApp() {}
@@ -74,6 +79,9 @@ void FirstApp::run() {
 
     PointLightSystem pointLightSystem{pveDevice, pveRenderer.getSwapChainRenderPass(),
                                       globalSetLayout->getDescriptorSetLayout()};
+    
+    uiRenderSystem = std::make_unique<UIRenderSystem>(pveDevice, pveRenderer.getSwapChainRenderPass());
+    
     PveCamera camera{};
     camera.setViewTarget(
         glm::vec3(-5.f, -5.f, 5.f),
@@ -81,14 +89,17 @@ void FirstApp::run() {
     // while the window doesn't want to close, poll window events
 
     // viewerObject has no model and won't be rendered. It's used to store the camera's current state.
-    auto viewerObject = PveGameObject::createGameObject();
-    viewerObject.transform.translation.z = -2.5f;
+    viewerObject = std::make_unique<PveGameObject>(PveGameObject::createGameObject());
+    viewerObject->transform.translation.z = -2.5f;
     KeyboardMovementController cameraController{};
 
     auto currentTime = std::chrono::high_resolution_clock::now();
 
     while (!pveWindow.shouldClose()) {
         glfwPollEvents();
+
+        // Track mouse position
+        glfwGetCursorPos(pveWindow.getGLFWWindow(), &mouseX, &mouseY);
 
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(
@@ -97,18 +108,22 @@ void FirstApp::run() {
         currentTime = newTime;
         frameTime = glm::min(frameTime, MAX_FRAME_TIME);
 
-        cameraController.moveInPlaneXZ(pveWindow.getGLFWWindow(), frameTime,
-                                       viewerObject);
-        camera.setViewYXZ(viewerObject.transform.translation,
-                          viewerObject.transform.rotation);
-        for (auto& kv : gameObjects) {
-            auto& obj = kv.second;
+        handleInput(pveWindow.getGLFWWindow(), frameTime);
 
-            if (obj.name == "cube") {
-                obj.transform.rotation.y =
-                    glm::mod(obj.transform.rotation.y + 0.001f, glm::two_pi<float>());
-                obj.transform.rotation.x =
-                    glm::mod(obj.transform.rotation.x + 0.005f, glm::two_pi<float>());
+        if (gameState.isPlaying()) {
+            cameraController.moveInPlaneXZ(pveWindow.getGLFWWindow(), frameTime,
+                                           *viewerObject);
+            camera.setViewYXZ(viewerObject->transform.translation,
+                              viewerObject->transform.rotation);
+            for (auto& kv : gameObjects) {
+                auto& obj = kv.second;
+
+                if (obj.name == "cube") {
+                    obj.transform.rotation.y =
+                        glm::mod(obj.transform.rotation.y + 0.001f, glm::two_pi<float>());
+                    obj.transform.rotation.x =
+                        glm::mod(obj.transform.rotation.x + 0.005f, glm::two_pi<float>());
+                }
             }
         }
 
@@ -125,24 +140,34 @@ void FirstApp::run() {
                                 globalDescriptorSets[frameIndex],
                                 gameObjects};
 
-            // Update shadow map before main rendering
-            pointLightSystem.updateShadowMap(frameInfo);
+            if (gameState.isPlaying()) {
+                // Update shadow map before main rendering
+                pointLightSystem.updateShadowMap(frameInfo);
 
-            // prepare and update objects in memory
-            GlobalUbo ubo{};
-            ubo.projection = camera.getProjection();
-            ubo.view = camera.getView();
-            ubo.inverseView = camera.getInverseView();
-            pointLightSystem.update(frameInfo, ubo);
-            uboBuffers[frameIndex]->writeToBuffer(&ubo);
-            uboBuffers[frameIndex]->flush();
+                // prepare and update objects in memory
+                GlobalUbo ubo{};
+                ubo.projection = camera.getProjection();
+                ubo.view = camera.getView();
+                ubo.inverseView = camera.getInverseView();
+                pointLightSystem.update(frameInfo, ubo);
+                uboBuffers[frameIndex]->writeToBuffer(&ubo);
+                uboBuffers[frameIndex]->flush();
+            }
 
             // render - record draw calls
             pveRenderer.beginSwapChainRenderPass(commandBuffer);
 
-            // order here matters
-            simpleRenderSystem.renderGameObjects(frameInfo);
-            pointLightSystem.render(frameInfo);
+            if (gameState.isPlaying() || gameState.isPaused()) {
+                // order here matters
+                simpleRenderSystem.renderGameObjects(frameInfo);
+                pointLightSystem.render(frameInfo);
+            }
+
+            if (gameState.isPaused()) {
+                renderPauseModal(commandBuffer);
+            } else if (gameState.isInMenu()) {
+                renderMenu(commandBuffer);
+            }
 
             pveRenderer.endSwapChainRenderPass(commandBuffer);
             pveRenderer.endFrame();
@@ -200,6 +225,147 @@ void FirstApp::loadGameObjects() {
             glm::vec3(rotateLight * glm::vec4(-1.f, -2.f, -1.f, 1.f));
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }
+}
+
+void FirstApp::handleInput(GLFWwindow* window, float frameTime) {
+    static bool escPressed = false;
+    static bool mousePressed = false;
+    
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        if (!escPressed) {
+            escPressed = true;
+            
+            if (gameState.isInMenu()) {
+                // ESC in menu closes the game
+                glfwSetWindowShouldClose(window, GLFW_TRUE);
+            } else if (gameState.isPlaying()) {
+                // ESC in play shows pause modal
+                gameState.setState(GameState::PAUSED);
+            } else if (gameState.isPaused()) {
+                // ESC in pause modal resumes game
+                gameState.setState(GameState::PLAYING);
+            }
+        }
+    } else {
+        escPressed = false;
+    }
+    
+    // Handle mouse clicks for UI
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        if (!mousePressed) {
+            mousePressed = true;
+            
+            if (gameState.isInMenu()) {
+                // Check menu button clicks
+                float playButtonX = WIDTH / 2.0f - 100.0f;
+                float playButtonY = HEIGHT / 2.0f - 50.0f;
+                float exitButtonX = WIDTH / 2.0f - 100.0f;
+                float exitButtonY = HEIGHT / 2.0f + 50.0f;
+                
+                if (mouseX >= playButtonX && mouseX <= playButtonX + 200.0f &&
+                    mouseY >= playButtonY && mouseY <= playButtonY + 50.0f) {
+                    gameState.setState(GameState::PLAYING);
+                }
+                
+                if (mouseX >= exitButtonX && mouseX <= exitButtonX + 200.0f &&
+                    mouseY >= exitButtonY && mouseY <= exitButtonY + 50.0f) {
+                    glfwSetWindowShouldClose(window, GLFW_TRUE);
+                }
+            } else if (gameState.isPaused()) {
+                // Check pause modal button clicks
+                float menuButtonX = WIDTH / 2.0f - 150.0f;
+                float menuButtonY = HEIGHT / 2.0f + 50.0f;
+                float resumeButtonX = WIDTH / 2.0f + 50.0f;
+                float resumeButtonY = HEIGHT / 2.0f + 50.0f;
+                
+                if (mouseX >= menuButtonX && mouseX <= menuButtonX + 100.0f &&
+                    mouseY >= menuButtonY && mouseY <= menuButtonY + 50.0f) {
+                    gameState.setState(GameState::MENU);
+                    viewerObject->transform.translation = glm::vec3(0.f);
+                    viewerObject->transform.rotation = glm::vec3(0.f);
+                }
+                
+                if (mouseX >= resumeButtonX && mouseX <= resumeButtonX + 100.0f &&
+                    mouseY >= resumeButtonY && mouseY <= resumeButtonY + 50.0f) {
+                    gameState.setState(GameState::PLAYING);
+                }
+            }
+        }
+    } else {
+        mousePressed = false;
+    }
+}
+
+void FirstApp::renderMenu(VkCommandBuffer commandBuffer) {
+    PveCamera uiCamera{};
+    FrameInfo frameInfo{0, 0.0f, commandBuffer, uiCamera, VK_NULL_HANDLE, gameObjects};
+    
+    // Create menu buttons
+    std::vector<UIButton> buttons;
+    
+    // Play button
+    UIButton playButton;
+    playButton.position = glm::vec2(WIDTH / 2.0f - 100.0f, HEIGHT / 2.0f - 50.0f);
+    playButton.size = glm::vec2(200.0f, 50.0f);
+    playButton.color = glm::vec4(0.0f, 0.5f, 0.0f, 1.0f);
+    playButton.hoverColor = glm::vec4(0.0f, 0.7f, 0.0f, 1.0f);
+    playButton.text = i18n.get("menu.play");
+    playButton.id = 1;
+    buttons.push_back(playButton);
+    
+    // Exit button
+    UIButton exitButton;
+    exitButton.position = glm::vec2(WIDTH / 2.0f - 100.0f, HEIGHT / 2.0f + 50.0f);
+    exitButton.size = glm::vec2(200.0f, 50.0f);
+    exitButton.color = glm::vec4(0.5f, 0.0f, 0.0f, 1.0f);
+    exitButton.hoverColor = glm::vec4(0.7f, 0.0f, 0.0f, 1.0f);
+    exitButton.text = i18n.get("menu.exit");
+    exitButton.id = 2;
+    buttons.push_back(exitButton);
+    
+    // Render buttons
+    uiRenderSystem->renderGameObjects(frameInfo, buttons, static_cast<int>(mouseX), static_cast<int>(mouseY));
+    
+    // Render title text
+    uiRenderSystem->renderText(frameInfo, i18n.get("menu.title"), 
+                              glm::vec2(WIDTH / 2.0f - 150.0f, HEIGHT / 2.0f - 150.0f),
+                              glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+}
+
+void FirstApp::renderPauseModal(VkCommandBuffer commandBuffer) {
+    PveCamera uiCamera{};
+    FrameInfo frameInfo{0, 0.0f, commandBuffer, uiCamera, VK_NULL_HANDLE, gameObjects};
+    
+    // Create pause modal buttons
+    std::vector<UIButton> buttons;
+    
+    // Return to menu button
+    UIButton menuButton;
+    menuButton.position = glm::vec2(WIDTH / 2.0f - 150.0f, HEIGHT / 2.0f + 50.0f);
+    menuButton.size = glm::vec2(100.0f, 50.0f);
+    menuButton.color = glm::vec4(0.5f, 0.5f, 0.0f, 1.0f);
+    menuButton.hoverColor = glm::vec4(0.7f, 0.7f, 0.0f, 1.0f);
+    menuButton.text = i18n.get("pause.return_to_menu");
+    menuButton.id = 1;
+    buttons.push_back(menuButton);
+    
+    // Resume button
+    UIButton resumeButton;
+    resumeButton.position = glm::vec2(WIDTH / 2.0f + 50.0f, HEIGHT / 2.0f + 50.0f);
+    resumeButton.size = glm::vec2(100.0f, 50.0f);
+    resumeButton.color = glm::vec4(0.0f, 0.5f, 0.5f, 1.0f);
+    resumeButton.hoverColor = glm::vec4(0.0f, 0.7f, 0.7f, 1.0f);
+    resumeButton.text = i18n.get("pause.resume");
+    resumeButton.id = 2;
+    buttons.push_back(resumeButton);
+    
+    // Render buttons
+    uiRenderSystem->renderGameObjects(frameInfo, buttons, static_cast<int>(mouseX), static_cast<int>(mouseY));
+    
+    // Render title text
+    uiRenderSystem->renderText(frameInfo, i18n.get("pause.title"), 
+                              glm::vec2(WIDTH / 2.0f - 100.0f, HEIGHT / 2.0f - 50.0f),
+                              glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 }
 
 }  // namespace pve
