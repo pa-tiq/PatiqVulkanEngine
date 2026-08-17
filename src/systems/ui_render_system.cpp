@@ -2,9 +2,67 @@
 
 #include <cassert>
 #include <cstring>
+#include <cctype>
 #include <stdexcept>
 
 namespace pve {
+
+// Simple 3x5 font (3 bits wide, 5 rows) for A-Z
+static const uint8_t font3x5[26][5] = {
+    {0x2, 0x5, 0x7, 0x5, 0x5}, // A
+    {0x6, 0x5, 0x6, 0x5, 0x6}, // B
+    {0x3, 0x4, 0x4, 0x4, 0x3}, // C
+    {0x6, 0x5, 0x5, 0x5, 0x6}, // D
+    {0x7, 0x4, 0x6, 0x4, 0x7}, // E
+    {0x7, 0x4, 0x6, 0x4, 0x4}, // F
+    {0x3, 0x4, 0x5, 0x5, 0x3}, // G
+    {0x5, 0x5, 0x7, 0x5, 0x5}, // H
+    {0x7, 0x2, 0x2, 0x2, 0x7}, // I
+    {0x1, 0x1, 0x1, 0x5, 0x2}, // J
+    {0x5, 0x5, 0x6, 0x5, 0x5}, // K
+    {0x4, 0x4, 0x4, 0x4, 0x7}, // L
+    {0x5, 0x7, 0x5, 0x5, 0x5}, // M
+    {0x5, 0x5, 0x7, 0x5, 0x5}, // N
+    {0x2, 0x5, 0x5, 0x5, 0x2}, // O
+    {0x6, 0x5, 0x6, 0x4, 0x4}, // P
+    {0x2, 0x5, 0x5, 0x6, 0x3}, // Q
+    {0x6, 0x5, 0x6, 0x5, 0x5}, // R
+    {0x3, 0x4, 0x2, 0x1, 0x6}, // S
+    {0x7, 0x2, 0x2, 0x2, 0x2}, // T
+    {0x5, 0x5, 0x5, 0x5, 0x2}, // U
+    {0x5, 0x5, 0x5, 0x2, 0x2}, // V
+    {0x5, 0x5, 0x5, 0x7, 0x5}, // W
+    {0x5, 0x5, 0x2, 0x5, 0x5}, // X
+    {0x5, 0x5, 0x2, 0x2, 0x2}, // Y
+    {0x7, 0x1, 0x2, 0x4, 0x7}, // Z
+};
+
+static void pushCharQuads(char c, float startX, float startY, float scale, glm::vec4 color, 
+                          std::vector<UIVertex>& vertices, std::vector<uint32_t>& indices, uint32_t& vertexOffset) {
+    c = std::toupper(c);
+    if (c < 'A' || c > 'Z') return;
+    int idx = c - 'A';
+    for (int row = 0; row < 5; ++row) {
+        uint8_t bits = font3x5[idx][row];
+        for (int col = 0; col < 3; ++col) {
+            if (bits & (1 << (2 - col))) {
+                float px = startX + col * scale;
+                float py = startY + row * scale;
+                vertices.push_back({{px, py}, color});
+                vertices.push_back({{px + scale, py}, color});
+                vertices.push_back({{px + scale, py + scale}, color});
+                vertices.push_back({{px, py + scale}, color});
+                indices.push_back(vertexOffset + 0);
+                indices.push_back(vertexOffset + 1);
+                indices.push_back(vertexOffset + 2);
+                indices.push_back(vertexOffset + 0);
+                indices.push_back(vertexOffset + 2);
+                indices.push_back(vertexOffset + 3);
+                vertexOffset += 4;
+            }
+        }
+    }
+}
 
 std::vector<VkVertexInputBindingDescription> UIVertex::getBindingDescriptions() {
     std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
@@ -127,21 +185,22 @@ void UIRenderSystem::ensureBufferCapacity(VkDeviceSize requiredVertexSize, VkDev
     }
 }
 
-void UIRenderSystem::renderGameObjects(FrameInfo &frameInfo, const std::vector<UIButton> &buttons, int mouseX, int mouseY) {
+void UIRenderSystem::renderGameObjects(const std::vector<UIButton> &buttons, int mouseX, int mouseY) {
     if (buttons.empty()) return;
 
-    pvePipeline->bind(frameInfo.commandBuffer);
+    // We no longer bind the pipeline here, it will be done in finishRender.
+    // Ensure lists are ready (cleared at end of previous frame)
 
     // Calculate total size needed (buttons + text labels)
     size_t totalVertices = buttons.size() * 4; // 4 vertices per button quad
     size_t totalIndices = buttons.size() * 6;  // 6 indices per button quad
 
-    // Pre-count text character quads for all button labels
+    // Pre-count text character quads for all button labels (15 pixels max per char)
     for (const auto &button : buttons) {
         for (char c : button.text) {
             if (c != ' ') {
-                totalVertices += 4;
-                totalIndices += 6;
+                totalVertices += 15 * 4;
+                totalIndices += 15 * 6;
             }
         }
     }
@@ -152,13 +211,12 @@ void UIRenderSystem::renderGameObjects(FrameInfo &frameInfo, const std::vector<U
     ensureBufferCapacity(newVertexBufferSize, newIndexBufferSize);
 
     // Fill vertex and index data for buttons AND their text labels in one batch
-    std::vector<UIVertex> vertices;
-    std::vector<uint32_t> indices;
-    uint32_t vertexOffset = 0;
+    uint32_t vertexOffset = static_cast<uint32_t>(uiVertices.size());
     
-    float charWidth = 10.0f;
-    float charHeight = 16.0f;
-    float spacing = 2.0f;
+    float pixelScale = 3.0f; // Scale for font
+    float charWidth = 3.0f * pixelScale;
+    float charHeight = 5.0f * pixelScale;
+    float spacing = 1.0f * pixelScale;
 
     for (const auto &button : buttons) {
         // Check if mouse is hovering over button
@@ -166,19 +224,35 @@ void UIRenderSystem::renderGameObjects(FrameInfo &frameInfo, const std::vector<U
                           mouseY >= button.position.y && mouseY <= button.position.y + button.size.y;
 
         glm::vec4 color = isHovering ? button.hoverColor : button.color;
+        
+        float bx = button.position.x;
+        float by = button.position.y;
+        float bw = button.size.x;
+        float bh = button.size.y;
+        
+        // Scale button slightly on hover
+        if (isHovering) {
+            float scaleAmt = 0.05f; // 5% scale
+            float dw = bw * scaleAmt;
+            float dh = bh * scaleAmt;
+            bx -= dw / 2.0f;
+            by -= dh / 2.0f;
+            bw += dw;
+            bh += dh;
+        }
 
         // Create quad vertices for button background
-        vertices.push_back({{button.position.x, button.position.y}, color});
-        vertices.push_back({{button.position.x + button.size.x, button.position.y}, color});
-        vertices.push_back({{button.position.x + button.size.x, button.position.y + button.size.y}, color});
-        vertices.push_back({{button.position.x, button.position.y + button.size.y}, color});
+        uiVertices.push_back({{bx, by}, color});
+        uiVertices.push_back({{bx + bw, by}, color});
+        uiVertices.push_back({{bx + bw, by + bh}, color});
+        uiVertices.push_back({{bx, by + bh}, color});
 
-        indices.push_back(vertexOffset + 0);
-        indices.push_back(vertexOffset + 1);
-        indices.push_back(vertexOffset + 2);
-        indices.push_back(vertexOffset + 0);
-        indices.push_back(vertexOffset + 2);
-        indices.push_back(vertexOffset + 3);
+        uiIndices.push_back(vertexOffset + 0);
+        uiIndices.push_back(vertexOffset + 1);
+        uiIndices.push_back(vertexOffset + 2);
+        uiIndices.push_back(vertexOffset + 0);
+        uiIndices.push_back(vertexOffset + 2);
+        uiIndices.push_back(vertexOffset + 3);
         
         vertexOffset += 4;
 
@@ -200,77 +274,28 @@ void UIRenderSystem::renderGameObjects(FrameInfo &frameInfo, const std::vector<U
                 textX += charWidth + spacing;
                 continue;
             }
-
-            vertices.push_back({{textX, textY}, textColor});
-            vertices.push_back({{textX + charWidth, textY}, textColor});
-            vertices.push_back({{textX + charWidth, textY + charHeight}, textColor});
-            vertices.push_back({{textX, textY + charHeight}, textColor});
-
-            indices.push_back(vertexOffset + 0);
-            indices.push_back(vertexOffset + 1);
-            indices.push_back(vertexOffset + 2);
-            indices.push_back(vertexOffset + 0);
-            indices.push_back(vertexOffset + 2);
-            indices.push_back(vertexOffset + 3);
-            
-            vertexOffset += 4;
+            pushCharQuads(c, textX, textY, pixelScale, textColor, uiVertices, uiIndices, vertexOffset);
             textX += charWidth + spacing;
         }
     }
-
-    // Upload vertex data
-    void *data;
-    vkMapMemory(pveDevice.device(), vertexBufferMemory, 0, vertices.size() * sizeof(UIVertex), 0, &data);
-    memcpy(data, vertices.data(), vertices.size() * sizeof(UIVertex));
-    vkUnmapMemory(pveDevice.device(), vertexBufferMemory);
-
-    // Upload index data
-    vkMapMemory(pveDevice.device(), indexBufferMemory, 0, indices.size() * sizeof(uint32_t), 0, &data);
-    memcpy(data, indices.data(), indices.size() * sizeof(uint32_t));
-    vkUnmapMemory(pveDevice.device(), indexBufferMemory);
-
-    VkBuffer vertexBuffers[] = {vertexBuffer};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(frameInfo.commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(frameInfo.commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-    // Use orthographic projection to map pixel coordinates to NDC
-    glm::mat4 orthoProjection = makeOrthoProjection(frameInfo.screenWidth, frameInfo.screenHeight);
-    vkCmdPushConstants(frameInfo.commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-                      sizeof(glm::mat4), &orthoProjection);
-
-    vkCmdDrawIndexed(frameInfo.commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 }
 
-void UIRenderSystem::renderText(FrameInfo &frameInfo, const std::string &text, glm::vec2 position, glm::vec4 color) {
-    // Simple text rendering using colored quads (placeholder for real font rendering)
-    // In a full implementation, this would use a texture atlas with font glyphs
-    
+void UIRenderSystem::renderText(const std::string &text, glm::vec2 position, glm::vec4 color) {
     // Count non-space characters
     size_t numChars = 0;
     for (char c : text) {
         if (c != ' ') numChars++;
     }
+
     if (numChars == 0) return;
 
-    pvePipeline->bind(frameInfo.commandBuffer);
+    float pixelScale = 4.0f; // Scale for font
+    float charWidth = 3.0f * pixelScale;
+    float charHeight = 5.0f * pixelScale;
+    float spacing = 1.0f * pixelScale;
 
-    float charWidth = 10.0f;
-    float charHeight = 20.0f;
-    float spacing = 2.0f;
-
-    size_t totalVertices = numChars * 4;
-    size_t totalIndices = numChars * 6;
-    
-    VkDeviceSize newVertexBufferSize = sizeof(UIVertex) * totalVertices;
-    VkDeviceSize newIndexBufferSize = sizeof(uint32_t) * totalIndices;
-
-    ensureBufferCapacity(newVertexBufferSize, newIndexBufferSize);
-
-    // Fill vertex buffer
-    std::vector<UIVertex> vertices;
-    std::vector<uint32_t> indices;
-    uint32_t vertexOffset = 0;
+    // Append to member buffers
+    uint32_t vertexOffset = static_cast<uint32_t>(uiVertices.size());
     float currentX = position.x;
     
     for (char c : text) {
@@ -278,34 +303,32 @@ void UIRenderSystem::renderText(FrameInfo &frameInfo, const std::string &text, g
             currentX += charWidth + spacing;
             continue;
         }
-
-        // Simple character representation as a small quad
-        vertices.push_back({{currentX, position.y}, color});
-        vertices.push_back({{currentX + charWidth, position.y}, color});
-        vertices.push_back({{currentX + charWidth, position.y + charHeight}, color});
-        vertices.push_back({{currentX, position.y + charHeight}, color});
-
-        indices.push_back(vertexOffset + 0);
-        indices.push_back(vertexOffset + 1);
-        indices.push_back(vertexOffset + 2);
-        indices.push_back(vertexOffset + 0);
-        indices.push_back(vertexOffset + 2);
-        indices.push_back(vertexOffset + 3);
         
-        vertexOffset += 4;
+        pushCharQuads(c, currentX, position.y, pixelScale, color, uiVertices, uiIndices, vertexOffset);
         currentX += charWidth + spacing;
     }
+}
+
+void UIRenderSystem::finishRender(FrameInfo &frameInfo) {
+    if (uiVertices.empty() || uiIndices.empty()) return;
+
+    VkDeviceSize newVertexBufferSize = sizeof(UIVertex) * uiVertices.size();
+    VkDeviceSize newIndexBufferSize = sizeof(uint32_t) * uiIndices.size();
+
+    ensureBufferCapacity(newVertexBufferSize, newIndexBufferSize);
 
     // Upload vertex data
     void *data;
-    vkMapMemory(pveDevice.device(), vertexBufferMemory, 0, vertices.size() * sizeof(UIVertex), 0, &data);
-    memcpy(data, vertices.data(), vertices.size() * sizeof(UIVertex));
+    vkMapMemory(pveDevice.device(), vertexBufferMemory, 0, newVertexBufferSize, 0, &data);
+    memcpy(data, uiVertices.data(), newVertexBufferSize);
     vkUnmapMemory(pveDevice.device(), vertexBufferMemory);
 
     // Upload index data
-    vkMapMemory(pveDevice.device(), indexBufferMemory, 0, indices.size() * sizeof(uint32_t), 0, &data);
-    memcpy(data, indices.data(), indices.size() * sizeof(uint32_t));
+    vkMapMemory(pveDevice.device(), indexBufferMemory, 0, newIndexBufferSize, 0, &data);
+    memcpy(data, uiIndices.data(), newIndexBufferSize);
     vkUnmapMemory(pveDevice.device(), indexBufferMemory);
+
+    pvePipeline->bind(frameInfo.commandBuffer);
 
     VkBuffer vertexBuffers[] = {vertexBuffer};
     VkDeviceSize offsets[] = {0};
@@ -317,7 +340,11 @@ void UIRenderSystem::renderText(FrameInfo &frameInfo, const std::string &text, g
     vkCmdPushConstants(frameInfo.commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                       sizeof(glm::mat4), &orthoProjection);
 
-    vkCmdDrawIndexed(frameInfo.commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+    vkCmdDrawIndexed(frameInfo.commandBuffer, static_cast<uint32_t>(uiIndices.size()), 1, 0, 0, 0);
+
+    // Clear vectors for next frame
+    uiVertices.clear();
+    uiIndices.clear();
 }
 
 }  // namespace pve

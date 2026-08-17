@@ -99,6 +99,12 @@ void PointLightSystem::updateShadowMap(FrameInfo &frameInfo) {
 }
 
 void PointLightSystem::update(FrameInfo &frameInfo, GlobalUbo &ubo) {
+    glm::vec3 lightPos = {0.0f, 10.0f, 10.0f};
+    float orthoSize = 20.0f;
+    glm::mat4 lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, 0.1f, 50.0f);
+    glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    ubo.lightSpaceMatrix = lightProjection * lightView;
+
     auto rotateLight =
         glm::rotate(glm::mat4(1.f), frameInfo.frameTime, glm::vec3(0.f, -1.f, 0.f));
     int lightIndex = 0;

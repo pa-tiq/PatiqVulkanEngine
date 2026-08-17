@@ -52,8 +52,9 @@ float ShadowCalculation(vec4 fragPosLightSpace) {
     // Check if current fragment is in shadow
     float shadow = currentDepth - bias > closestDepth ? 0.5 : 0.0;
     
-    // If projection is outside shadow map, don't cast shadow
-    if(projCoords.z > 1.0)
+    // If projection is outside shadow map bounds in any axis, don't cast shadow
+    // This prevents the world from turning black when camera moves beyond shadow map radius
+    if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0)
         shadow = 0.0;
         
     return shadow;

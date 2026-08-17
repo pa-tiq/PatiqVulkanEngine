@@ -324,20 +324,20 @@ void FirstApp::handleInput(GLFWwindow* window, float frameTime) {
                     glfwSetWindowShouldClose(window, GLFW_TRUE);
                 }
             } else if (gameState.isPaused()) {
-                // Check pause modal button clicks
-                float menuButtonX = WIDTH / 2.0f - 150.0f;
-                float menuButtonY = HEIGHT / 2.0f + 50.0f;
-                float resumeButtonX = WIDTH / 2.0f + 50.0f;
+                // Check pause modal button clicks (vertical layout)
+                float menuButtonX = WIDTH / 2.0f - 125.0f;
+                float menuButtonY = HEIGHT / 2.0f - 25.0f;
+                float resumeButtonX = WIDTH / 2.0f - 125.0f;
                 float resumeButtonY = HEIGHT / 2.0f + 50.0f;
                 
-                if (mouseX >= menuButtonX && mouseX <= menuButtonX + 100.0f &&
+                if (mouseX >= menuButtonX && mouseX <= menuButtonX + 250.0f &&
                     mouseY >= menuButtonY && mouseY <= menuButtonY + 50.0f) {
                     gameState.setState(GameState::MENU);
                     viewerObject->transform.translation = glm::vec3(0.f);
                     viewerObject->transform.rotation = glm::vec3(0.f);
                 }
                 
-                if (mouseX >= resumeButtonX && mouseX <= resumeButtonX + 100.0f &&
+                if (mouseX >= resumeButtonX && mouseX <= resumeButtonX + 250.0f &&
                     mouseY >= resumeButtonY && mouseY <= resumeButtonY + 50.0f) {
                     gameState.setState(GameState::PLAYING);
                 }
@@ -345,6 +345,36 @@ void FirstApp::handleInput(GLFWwindow* window, float frameTime) {
         }
     } else {
         mousePressed = false;
+    }
+
+    // Handle cursor hover feedback
+    bool isHovering = false;
+    if (gameState.isInMenu()) {
+        float playButtonX = WIDTH / 2.0f - 100.0f;
+        float playButtonY = HEIGHT / 2.0f - 50.0f;
+        float exitButtonX = WIDTH / 2.0f - 100.0f;
+        float exitButtonY = HEIGHT / 2.0f + 50.0f;
+        
+        if ((mouseX >= playButtonX && mouseX <= playButtonX + 200.0f && mouseY >= playButtonY && mouseY <= playButtonY + 50.0f) ||
+            (mouseX >= exitButtonX && mouseX <= exitButtonX + 200.0f && mouseY >= exitButtonY && mouseY <= exitButtonY + 50.0f)) {
+            isHovering = true;
+        }
+    } else if (gameState.isPaused()) {
+        float menuButtonX = WIDTH / 2.0f - 125.0f;
+        float menuButtonY = HEIGHT / 2.0f - 25.0f;
+        float resumeButtonX = WIDTH / 2.0f - 125.0f;
+        float resumeButtonY = HEIGHT / 2.0f + 50.0f;
+        
+        if ((mouseX >= menuButtonX && mouseX <= menuButtonX + 250.0f && mouseY >= menuButtonY && mouseY <= menuButtonY + 50.0f) ||
+            (mouseX >= resumeButtonX && mouseX <= resumeButtonX + 250.0f && mouseY >= resumeButtonY && mouseY <= resumeButtonY + 50.0f)) {
+            isHovering = true;
+        }
+    }
+    
+    if (isHovering) {
+        glfwSetCursor(window, glfwCreateStandardCursor(GLFW_HAND_CURSOR));
+    } else {
+        glfwSetCursor(window, glfwCreateStandardCursor(GLFW_ARROW_CURSOR));
     }
 }
 
@@ -383,12 +413,15 @@ void FirstApp::renderMenu(VkCommandBuffer commandBuffer) {
     buttons.push_back(exitButton);
     
     // Render buttons (text labels are rendered inside renderGameObjects)
-    uiRenderSystem->renderGameObjects(frameInfo, buttons, static_cast<int>(mouseX), static_cast<int>(mouseY));
+    uiRenderSystem->renderGameObjects(buttons, static_cast<int>(mouseX), static_cast<int>(mouseY));
     
     // Render title text in hacker green
-    uiRenderSystem->renderText(frameInfo, i18n.get("menu.title"), 
+    uiRenderSystem->renderText(i18n.get("menu.title"), 
                               glm::vec2(WIDTH / 2.0f - 150.0f, HEIGHT / 2.0f - 150.0f),
                               hackerGreen);
+    
+    // Finish render with single buffer upload and draw call
+    uiRenderSystem->finishRender(frameInfo);
 }
 
 void FirstApp::renderPauseModal(VkCommandBuffer commandBuffer) {
@@ -405,20 +438,20 @@ void FirstApp::renderPauseModal(VkCommandBuffer commandBuffer) {
     // Create pause modal buttons
     std::vector<UIButton> buttons;
     
-    // Return to menu button
+    // Return to menu button (stacked vertically, wider to fit text)
     UIButton menuButton;
-    menuButton.position = glm::vec2(WIDTH / 2.0f - 150.0f, HEIGHT / 2.0f + 50.0f);
-    menuButton.size = glm::vec2(100.0f, 50.0f);
+    menuButton.position = glm::vec2(WIDTH / 2.0f - 125.0f, HEIGHT / 2.0f - 25.0f);
+    menuButton.size = glm::vec2(250.0f, 50.0f);
     menuButton.color = (selectedMenuIndex == 0) ? selectedColor : hackerGreenDark;
     menuButton.hoverColor = hackerGreenHover;
     menuButton.text = i18n.get("pause.return_to_menu");
     menuButton.id = 1;
     buttons.push_back(menuButton);
     
-    // Resume button
+    // Resume button (stacked vertically below the first button)
     UIButton resumeButton;
-    resumeButton.position = glm::vec2(WIDTH / 2.0f + 50.0f, HEIGHT / 2.0f + 50.0f);
-    resumeButton.size = glm::vec2(100.0f, 50.0f);
+    resumeButton.position = glm::vec2(WIDTH / 2.0f - 125.0f, HEIGHT / 2.0f + 50.0f);
+    resumeButton.size = glm::vec2(250.0f, 50.0f);
     resumeButton.color = (selectedMenuIndex == 1) ? selectedColor : hackerGreenDark;
     resumeButton.hoverColor = hackerGreenHover;
     resumeButton.text = i18n.get("pause.resume");
@@ -426,12 +459,15 @@ void FirstApp::renderPauseModal(VkCommandBuffer commandBuffer) {
     buttons.push_back(resumeButton);
     
     // Render buttons
-    uiRenderSystem->renderGameObjects(frameInfo, buttons, static_cast<int>(mouseX), static_cast<int>(mouseY));
+    uiRenderSystem->renderGameObjects(buttons, static_cast<int>(mouseX), static_cast<int>(mouseY));
     
     // Render title text in hacker green
-    uiRenderSystem->renderText(frameInfo, i18n.get("pause.title"), 
-                              glm::vec2(WIDTH / 2.0f - 100.0f, HEIGHT / 2.0f - 50.0f),
+    uiRenderSystem->renderText(i18n.get("pause.title"), 
+                              glm::vec2(WIDTH / 2.0f - 100.0f, HEIGHT / 2.0f - 100.0f),
                               hackerGreen);
+    
+    // Finish render with single buffer upload and draw call
+    uiRenderSystem->finishRender(frameInfo);
 }
 
 }  // namespace pve

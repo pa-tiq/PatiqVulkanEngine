@@ -34,13 +34,17 @@ class UIRenderSystem {
     UIRenderSystem(const UIRenderSystem &) = delete;
     UIRenderSystem &operator=(const UIRenderSystem &) = delete;
 
-    void renderGameObjects(FrameInfo &frameInfo, const std::vector<UIButton> &buttons, int mouseX, int mouseY);
-    void renderText(FrameInfo &frameInfo, const std::string &text, glm::vec2 position, glm::vec4 color);
+    void renderGameObjects(const std::vector<UIButton> &buttons, int mouseX, int mouseY);
+    void renderText(const std::string &text, glm::vec2 position, glm::vec4 color);
+    void finishRender(FrameInfo &frameInfo);
 
    private:
     void createPipelineLayout();
     void createPipeline(VkRenderPass renderPass);
     void ensureBufferCapacity(VkDeviceSize requiredVertexSize, VkDeviceSize requiredIndexSize);
+
+    std::vector<UIVertex> uiVertices;
+    std::vector<uint32_t> uiIndices;
 
     PveDevice &pveDevice;
     std::unique_ptr<PvePipeline> pvePipeline;
