@@ -230,6 +230,9 @@ void FirstApp::loadGameObjects() {
 void FirstApp::handleInput(GLFWwindow* window, float frameTime) {
     static bool escPressed = false;
     static bool mousePressed = false;
+    static bool upPressed = false;
+    static bool downPressed = false;
+    static bool enterPressed = false;
     
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         if (!escPressed) {
@@ -241,6 +244,7 @@ void FirstApp::handleInput(GLFWwindow* window, float frameTime) {
             } else if (gameState.isPlaying()) {
                 // ESC in play shows pause modal
                 gameState.setState(GameState::PAUSED);
+                selectedMenuIndex = 0;
             } else if (gameState.isPaused()) {
                 // ESC in pause modal resumes game
                 gameState.setState(GameState::PLAYING);
@@ -248,6 +252,54 @@ void FirstApp::handleInput(GLFWwindow* window, float frameTime) {
         }
     } else {
         escPressed = false;
+    }
+    
+    // Handle keyboard navigation for menus
+    if (gameState.isInMenu() || gameState.isPaused()) {
+        int numButtons = gameState.isInMenu() ? 2 : 2;
+        
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            if (!upPressed) {
+                upPressed = true;
+                selectedMenuIndex = (selectedMenuIndex - 1 + numButtons) % numButtons;
+            }
+        } else {
+            upPressed = false;
+        }
+        
+        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            if (!downPressed) {
+                downPressed = true;
+                selectedMenuIndex = (selectedMenuIndex + 1) % numButtons;
+            }
+        } else {
+            downPressed = false;
+        }
+        
+        if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
+            if (!enterPressed) {
+                enterPressed = true;
+                
+                if (gameState.isInMenu()) {
+                    if (selectedMenuIndex == 0) {
+                        gameState.setState(GameState::PLAYING);
+                    } else if (selectedMenuIndex == 1) {
+                        glfwSetWindowShouldClose(window, GLFW_TRUE);
+                    }
+                } else if (gameState.isPaused()) {
+                    if (selectedMenuIndex == 0) {
+                        gameState.setState(GameState::MENU);
+                        viewerObject->transform.translation = glm::vec3(0.f);
+                        viewerObject->transform.rotation = glm::vec3(0.f);
+                        selectedMenuIndex = 0;
+                    } else if (selectedMenuIndex == 1) {
+                        gameState.setState(GameState::PLAYING);
+                    }
+                }
+            }
+        } else {
+            enterPressed = false;
+        }
     }
     
     // Handle mouse clicks for UI
@@ -298,7 +350,14 @@ void FirstApp::handleInput(GLFWwindow* window, float frameTime) {
 
 void FirstApp::renderMenu(VkCommandBuffer commandBuffer) {
     PveCamera uiCamera{};
-    FrameInfo frameInfo{0, 0.0f, commandBuffer, uiCamera, VK_NULL_HANDLE, gameObjects};
+    FrameInfo frameInfo{0, 0.0f, commandBuffer, uiCamera, VK_NULL_HANDLE, gameObjects,
+                        static_cast<float>(WIDTH), static_cast<float>(HEIGHT)};
+    
+    // Hacker green color
+    glm::vec4 hackerGreen = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+    glm::vec4 hackerGreenDark = glm::vec4(0.0f, 0.4f, 0.0f, 1.0f);
+    glm::vec4 hackerGreenHover = glm::vec4(0.0f, 0.7f, 0.0f, 1.0f);
+    glm::vec4 selectedColor = glm::vec4(0.0f, 0.6f, 0.0f, 1.0f);
     
     // Create menu buttons
     std::vector<UIButton> buttons;
@@ -307,8 +366,8 @@ void FirstApp::renderMenu(VkCommandBuffer commandBuffer) {
     UIButton playButton;
     playButton.position = glm::vec2(WIDTH / 2.0f - 100.0f, HEIGHT / 2.0f - 50.0f);
     playButton.size = glm::vec2(200.0f, 50.0f);
-    playButton.color = glm::vec4(0.0f, 0.5f, 0.0f, 1.0f);
-    playButton.hoverColor = glm::vec4(0.0f, 0.7f, 0.0f, 1.0f);
+    playButton.color = (selectedMenuIndex == 0) ? selectedColor : hackerGreenDark;
+    playButton.hoverColor = hackerGreenHover;
     playButton.text = i18n.get("menu.play");
     playButton.id = 1;
     buttons.push_back(playButton);
@@ -317,24 +376,31 @@ void FirstApp::renderMenu(VkCommandBuffer commandBuffer) {
     UIButton exitButton;
     exitButton.position = glm::vec2(WIDTH / 2.0f - 100.0f, HEIGHT / 2.0f + 50.0f);
     exitButton.size = glm::vec2(200.0f, 50.0f);
-    exitButton.color = glm::vec4(0.5f, 0.0f, 0.0f, 1.0f);
-    exitButton.hoverColor = glm::vec4(0.7f, 0.0f, 0.0f, 1.0f);
+    exitButton.color = (selectedMenuIndex == 1) ? selectedColor : hackerGreenDark;
+    exitButton.hoverColor = hackerGreenHover;
     exitButton.text = i18n.get("menu.exit");
     exitButton.id = 2;
     buttons.push_back(exitButton);
     
-    // Render buttons
+    // Render buttons (text labels are rendered inside renderGameObjects)
     uiRenderSystem->renderGameObjects(frameInfo, buttons, static_cast<int>(mouseX), static_cast<int>(mouseY));
     
-    // Render title text
+    // Render title text in hacker green
     uiRenderSystem->renderText(frameInfo, i18n.get("menu.title"), 
                               glm::vec2(WIDTH / 2.0f - 150.0f, HEIGHT / 2.0f - 150.0f),
-                              glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+                              hackerGreen);
 }
 
 void FirstApp::renderPauseModal(VkCommandBuffer commandBuffer) {
     PveCamera uiCamera{};
-    FrameInfo frameInfo{0, 0.0f, commandBuffer, uiCamera, VK_NULL_HANDLE, gameObjects};
+    FrameInfo frameInfo{0, 0.0f, commandBuffer, uiCamera, VK_NULL_HANDLE, gameObjects,
+                        static_cast<float>(WIDTH), static_cast<float>(HEIGHT)};
+    
+    // Hacker green color
+    glm::vec4 hackerGreen = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+    glm::vec4 hackerGreenDark = glm::vec4(0.0f, 0.4f, 0.0f, 1.0f);
+    glm::vec4 hackerGreenHover = glm::vec4(0.0f, 0.7f, 0.0f, 1.0f);
+    glm::vec4 selectedColor = glm::vec4(0.0f, 0.6f, 0.0f, 1.0f);
     
     // Create pause modal buttons
     std::vector<UIButton> buttons;
@@ -343,8 +409,8 @@ void FirstApp::renderPauseModal(VkCommandBuffer commandBuffer) {
     UIButton menuButton;
     menuButton.position = glm::vec2(WIDTH / 2.0f - 150.0f, HEIGHT / 2.0f + 50.0f);
     menuButton.size = glm::vec2(100.0f, 50.0f);
-    menuButton.color = glm::vec4(0.5f, 0.5f, 0.0f, 1.0f);
-    menuButton.hoverColor = glm::vec4(0.7f, 0.7f, 0.0f, 1.0f);
+    menuButton.color = (selectedMenuIndex == 0) ? selectedColor : hackerGreenDark;
+    menuButton.hoverColor = hackerGreenHover;
     menuButton.text = i18n.get("pause.return_to_menu");
     menuButton.id = 1;
     buttons.push_back(menuButton);
@@ -353,8 +419,8 @@ void FirstApp::renderPauseModal(VkCommandBuffer commandBuffer) {
     UIButton resumeButton;
     resumeButton.position = glm::vec2(WIDTH / 2.0f + 50.0f, HEIGHT / 2.0f + 50.0f);
     resumeButton.size = glm::vec2(100.0f, 50.0f);
-    resumeButton.color = glm::vec4(0.0f, 0.5f, 0.5f, 1.0f);
-    resumeButton.hoverColor = glm::vec4(0.0f, 0.7f, 0.7f, 1.0f);
+    resumeButton.color = (selectedMenuIndex == 1) ? selectedColor : hackerGreenDark;
+    resumeButton.hoverColor = hackerGreenHover;
     resumeButton.text = i18n.get("pause.resume");
     resumeButton.id = 2;
     buttons.push_back(resumeButton);
@@ -362,10 +428,10 @@ void FirstApp::renderPauseModal(VkCommandBuffer commandBuffer) {
     // Render buttons
     uiRenderSystem->renderGameObjects(frameInfo, buttons, static_cast<int>(mouseX), static_cast<int>(mouseY));
     
-    // Render title text
+    // Render title text in hacker green
     uiRenderSystem->renderText(frameInfo, i18n.get("pause.title"), 
                               glm::vec2(WIDTH / 2.0f - 100.0f, HEIGHT / 2.0f - 50.0f),
-                              glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+                              hackerGreen);
 }
 
 }  // namespace pve

@@ -40,6 +40,7 @@ class UIRenderSystem {
    private:
     void createPipelineLayout();
     void createPipeline(VkRenderPass renderPass);
+    void ensureBufferCapacity(VkDeviceSize requiredVertexSize, VkDeviceSize requiredIndexSize);
 
     PveDevice &pveDevice;
     std::unique_ptr<PvePipeline> pvePipeline;

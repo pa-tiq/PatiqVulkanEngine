@@ -48,6 +48,7 @@ class FirstApp {
 
     double mouseX = 0.0;
     double mouseY = 0.0;
+    int selectedMenuIndex = 0;
 
     static constexpr uint32_t SHADOW_MAP_SIZE = 2048;
 };

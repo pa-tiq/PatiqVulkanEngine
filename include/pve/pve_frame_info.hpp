@@ -33,5 +33,7 @@ struct FrameInfo {
     PveCamera &camera;
     VkDescriptorSet globalDescriptorSet;
     PveGameObject::Map &gameObjects;
+    float screenWidth = 0.0f;
+    float screenHeight = 0.0f;
 };
 }  // namespace pve
