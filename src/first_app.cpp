@@ -22,7 +22,7 @@
 
 namespace pve {
 
-float MAX_FRAME_TIME = 1.0f;
+float MAX_FRAME_TIME = 0.1f;
 
 FirstApp::FirstApp() {
     globalPool = PveDescriptorPool::Builder(pveDevice)
