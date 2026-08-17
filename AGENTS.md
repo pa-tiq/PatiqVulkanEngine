@@ -24,7 +24,6 @@ Regra central deste projeto: **fazer a coisa mais simples que funciona, ver func
 - **printf/cout debugging é válido.** Não tem tempo pra configurar debugger gráfico pra Vulkan. `std::cerr` com contexto (nome da função, valores) resolve 90% dos casos. Vulkan validation layers (já habilitadas via `vulkan-validationlayers`) fazem o resto.
 - **Compilar cedo, compilar sempre.** Cada `.cpp`/`.hpp` tocado deve compilar antes de seguir pro próximo arquivo. Erros de template/linker em Vulkan são dolorosos de rastrear se acumularem.
 - **Se travou mais de ~15-20 min num bug, simplificar o problema.** Comentar código, isolar o menor caso que reproduz o crash/validation error, resolver isolado, depois reintegrar.
-- **Preferir hardcode explícito a configuração genérica** enquanto o comportamento final não está claro (ex: cores hardcoded tipo `hackerGreen`, posições de botão em pixel fixo — é assim que o código já é, e está certo pra esse estágio do projeto).
 
 ## Boas práticas Vulkan usadas/esperadas neste código
 
